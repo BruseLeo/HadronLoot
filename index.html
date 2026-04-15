@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
 <style>
-  :root {
+:root {
     --gold: #c9a227;
     --gold-light: #e8c96a;
     --gold-dim: #7a5f10;
@@ -518,17 +518,86 @@
 
   .hidden { display: none !important; }
   .no-results { color: var(--text-muted); font-style: italic; font-size: 0.9rem; padding: 1rem 0; }
+
+  /* ─── SYNC STATUS ─── */
+  .sync-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+    flex-shrink: 0;
+  }
+  .sync-ok   { background: var(--green); }
+  .sync-err  { background: var(--red); }
+  .sync-spin {
+    border: 2px solid rgba(201,162,39,0.3);
+    border-top-color: var(--gold);
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .sync-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    padding: 6px 10px;
+    border-radius: 3px;
+    background: var(--void-3);
+    border: 0.5px solid var(--border);
+  }
+  .sync-bar span { flex: 1; }
+
+  /* Loading overlay */
+  .loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--void);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 500;
+    gap: 1rem;
+  }
+  .loading-logo {
+    font-family: 'Cinzel', serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 0.08em;
+  }
+  .loading-spinner {
+    width: 32px; height: 32px;
+    border: 2px solid rgba(201,162,39,0.2);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  .loading-msg { font-size: 0.85rem; color: var(--text-muted); }
 </style>
 </head>
 <body>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loading-logo">HadronLoot RL</div>
+  <div class="loading-spinner"></div>
+  <div class="loading-msg" id="loading-msg">Connexion à la base de données…</div>
+</div>
 
 <header class="site-header">
   <div class="logo">
     HadronLoot RL
     <span>Midnight — Saison 1</span>
   </div>
-  <div class="header-actions">
-    <span id="rl-toggle-hint" style="font-size:0.78rem;color:var(--text-muted);margin-right:4px;">Mode RL :</span>
+  <div class="header-actions" style="gap:12px;">
+    <div class="sync-bar" id="sync-bar">
+      <div class="sync-dot sync-spin" id="sync-dot"></div>
+      <span id="sync-label">Connexion…</span>
+    </div>
+    <span style="font-size:0.78rem;color:var(--text-muted);">Mode RL :</span>
     <button class="btn" id="btn-rl-toggle">Activer</button>
   </div>
 </header>
@@ -538,7 +607,7 @@
   <aside class="sidebar">
     <div>
       <div class="section-label">Ton pseudo</div>
-      <div class="login-block">
+      <div class="login-block" id="login-block">
         <input class="player-input" id="player-name-input" type="text" placeholder="Ex: Thrall" autocomplete="off" spellcheck="false" />
         <button class="btn btn-gold" id="btn-confirm-player" style="width:100%;">Confirmer</button>
       </div>
@@ -551,21 +620,15 @@
     <div>
       <div class="section-label">Mes réservations (max 2)</div>
       <div class="resa-summary" id="resa-summary">
-        <div class="resa-slot">
-          <span class="resa-num">1</span>
-          <div class="resa-info"><div class="resa-empty">— aucune —</div></div>
-        </div>
-        <div class="resa-slot">
-          <span class="resa-num">2</span>
-          <div class="resa-info"><div class="resa-empty">— aucune —</div></div>
-        </div>
+        <div class="resa-slot"><span class="resa-num">1</span><div class="resa-info"><div class="resa-empty">— aucune —</div></div></div>
+        <div class="resa-slot"><span class="resa-num">2</span><div class="resa-info"><div class="resa-empty">— aucune —</div></div></div>
       </div>
     </div>
 
     <div>
       <div class="section-label">Filtres</div>
       <div class="filter-group">
-        <input class="search-input" id="search-input" type="text" placeholder="Chercher un objet..." autocomplete="off" />
+        <input class="search-input" id="search-input" type="text" placeholder="Chercher un objet…" autocomplete="off" />
         <select class="filter-select" id="filter-raid">
           <option value="">Tous les raids</option>
           <option value="FLECHE DU VIDE">Flèche du Vide</option>
@@ -596,7 +659,7 @@
     </div>
 
     <div style="margin-top:auto;padding-top:1rem;border-top:0.5px solid var(--border);">
-      <div style="font-size:0.72rem;color:var(--text-muted);">Données stockées localement dans ton navigateur. Le RL exporte le CSV pour l'addon.</div>
+      <div style="font-size:0.72rem;color:var(--text-muted);">Données partagées en temps réel. Rafraîchissement auto toutes les 20s.</div>
     </div>
   </aside>
 
@@ -620,7 +683,7 @@
         <strong>Réservations verrouillées</strong>
         <small id="lock-date-label"></small>
       </div>
-      <button class="btn btn-rl-only hidden" id="btn-unlock" style="font-size:0.65rem;padding:5px 12px;">Déverrouiller</button>
+      <button class="btn hidden" id="btn-unlock" style="font-size:0.65rem;padding:5px 12px;">Déverrouiller</button>
     </div>
 
     <!-- Items listing -->
@@ -649,7 +712,38 @@
 
 <script>
 // ═══════════════════════════════════════════════════════════════
-// LOOT DATA — extrait du CSV
+// SUPABASE CONFIG
+// ═══════════════════════════════════════════════════════════════
+const SUPABASE_URL = 'https://fypbsjvgzklosvuddoyn.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_1MBIfmgi3FV5FoMze5TGJw_O_JEDg-5';
+
+// Thin Supabase REST client — no SDK needed
+const sb = {
+  async req(method, path, body) {
+    const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
+      method,
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': method === 'POST' ? 'return=representation' : '',
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(err);
+    }
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
+  },
+  get: (path) => sb.req('GET', path),
+  post: (path, body) => sb.req('POST', path, body),
+  delete: (path) => sb.req('DELETE', path),
+};
+
+// ═══════════════════════════════════════════════════════════════
+// LOOT DATA
 // ═══════════════════════════════════════════════════════════════
 const LOOT_DATA = [
   {raid:"FLECHE DU VIDE",boss:"IMPERATOR AVERZIAN",order:1,name:"Poids du commandement",slot:"Intel Masse",type:"Arme",stat1:"Crit",stat2:"Poly",link:"https://www.wowhead.com/fr/item=249293/weight-of-command?bonus=12785",id:249293},
@@ -769,37 +863,67 @@ const LOOT_DATA = [
 // ═══════════════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════════════
-const STORAGE_KEY = 'hadronloot_reservations_v1';
-const LOCK_KEY = 'hadronloot_lock_v1';
 const PLAYER_KEY = 'hadronloot_player_v1';
-const RL_KEY = 'hadronloot_rl_v1';
+const RL_KEY    = 'hadronloot_rl_v1';
 
 let state = {
   currentPlayer: localStorage.getItem(PLAYER_KEY) || '',
   isRL: localStorage.getItem(RL_KEY) === '1',
-  reservations: {},  // { itemId: [playerName, ...] }
-  lock: null,        // { timestamp, snapshot: { itemId: [players] } } or null
-  filters: { raid: '', type: '', slot: '', search: '', mine: false }
+  reservations: {},   // { itemId: [playerName, ...] }  — built from DB rows
+  lock: null,         // { id, snapshot, created_at } or null
+  filters: { raid: '', type: '', slot: '', search: '', mine: false },
+  syncing: false,
+  pollTimer: null,
 };
 
-function loadState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) state.reservations = JSON.parse(raw);
-  } catch(e) {}
-  try {
-    const raw = localStorage.getItem(LOCK_KEY);
-    if (raw) state.lock = JSON.parse(raw);
-  } catch(e) {}
+// ═══════════════════════════════════════════════════════════════
+// SUPABASE SYNC
+// ═══════════════════════════════════════════════════════════════
+function setSyncStatus(status, msg) {
+  const dot = document.getElementById('sync-dot');
+  const lbl = document.getElementById('sync-label');
+  dot.className = 'sync-dot ' + (status === 'ok' ? 'sync-ok' : status === 'err' ? 'sync-err' : 'sync-spin');
+  lbl.textContent = msg;
 }
 
-function saveReservations() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.reservations));
+async function fetchReservations() {
+  const rows = await sb.get('reservations?select=player_name,item_id&order=created_at.asc');
+  const map = {};
+  for (const row of rows) {
+    const id = row.item_id;
+    if (!map[id]) map[id] = [];
+    if (!map[id].includes(row.player_name)) map[id].push(row.player_name);
+  }
+  return map;
 }
 
-function saveLock() {
-  if (state.lock) localStorage.setItem(LOCK_KEY, JSON.stringify(state.lock));
-  else localStorage.removeItem(LOCK_KEY);
+async function fetchLock() {
+  const rows = await sb.get('locks?select=id,snapshot,created_at&order=created_at.desc&limit=1');
+  return rows && rows.length > 0 ? rows[0] : null;
+}
+
+async function syncAll(showSpinner = false) {
+  if (state.syncing) return;
+  state.syncing = true;
+  if (showSpinner) setSyncStatus('spin', 'Synchronisation…');
+  try {
+    const [reservations, lock] = await Promise.all([fetchReservations(), fetchLock()]);
+    state.reservations = reservations;
+    state.lock = lock;
+    render();
+    const now = new Date().toLocaleTimeString('fr-BE', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+    setSyncStatus('ok', 'Sync ' + now);
+  } catch(e) {
+    setSyncStatus('err', 'Erreur réseau');
+    console.error(e);
+  } finally {
+    state.syncing = false;
+  }
+}
+
+function startPolling() {
+  if (state.pollTimer) clearInterval(state.pollTimer);
+  state.pollTimer = setInterval(() => syncAll(false), 20000);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -817,10 +941,6 @@ function getMyReservations() {
     }
   }
   return result;
-}
-
-function canReserve() {
-  return state.currentPlayer && getMyReservations().length < 2;
 }
 
 function hasReserved(itemId) {
@@ -853,7 +973,7 @@ function toast(msg, type='ok') {
   el.textContent = msg;
   el.className = 'toast toast-' + type + ' visible';
   clearTimeout(el._t);
-  el._t = setTimeout(() => el.classList.remove('visible'), 3000);
+  el._t = setTimeout(() => el.classList.remove('visible'), 3200);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -902,19 +1022,13 @@ function getFilteredItems() {
 function renderItems() {
   const container = document.getElementById('items-container');
   const filtered = getFilteredItems();
-
-  // Group by raid then boss
   const groups = {};
   const groupOrder = [];
   for (const item of filtered) {
     const key = item.raid + '|||' + item.boss;
-    if (!groups[key]) {
-      groups[key] = { raid: item.raid, boss: item.boss, order: item.order, items: [] };
-      groupOrder.push(key);
-    }
+    if (!groups[key]) { groups[key] = { raid: item.raid, boss: item.boss, order: item.order, items: [] }; groupOrder.push(key); }
     groups[key].items.push(item);
   }
-  // Sort by raid then boss order
   groupOrder.sort((a, b) => {
     const ga = groups[a], gb = groups[b];
     const raidOrd = { 'FLECHE DU VIDE': 0, 'FAILLE DU REVE': 1, "MARCHE SUR QUEL'DANAS": 2 };
@@ -922,12 +1036,7 @@ function renderItems() {
     if (ra !== rb) return ra - rb;
     return ga.order - gb.order;
   });
-
-  if (groupOrder.length === 0) {
-    container.innerHTML = '<div class="no-results">Aucun objet ne correspond aux filtres.</div>';
-    return;
-  }
-
+  if (groupOrder.length === 0) { container.innerHTML = '<div class="no-results">Aucun objet ne correspond aux filtres.</div>'; return; }
   let html = '';
   for (const key of groupOrder) {
     const g = groups[key];
@@ -938,9 +1047,7 @@ function renderItems() {
         <span class="boss-count">${g.items.length} objet${g.items.length>1?'s':''}</span>
       </div>
       <div class="items-grid">`;
-    for (const item of g.items) {
-      html += renderItemCard(item);
-    }
+    for (const item of g.items) html += renderItemCard(item);
     html += `</div></div>`;
   }
   container.innerHTML = html;
@@ -950,33 +1057,20 @@ function renderItemCard(item) {
   const players = state.reservations[item.id] || [];
   const me = hasReserved(item.id);
   const locked = !!state.lock;
-
-  let cardClass = 'item-card';
-  if (me) cardClass += ' reserved-by-me';
-
+  let cardClass = 'item-card' + (me ? ' reserved-by-me' : '');
   const stats = [item.stat1, item.stat2].filter(Boolean);
-
-  let reservantsHtml = '';
-  if (players.length > 0) {
-    reservantsHtml = players.map(p =>
-      `<span class="reservant-chip${p === state.currentPlayer ? ' me' : ''}">${p}</span>`
-    ).join('');
-  }
-
+  const reservantsHtml = players.length > 0
+    ? players.map(p => `<span class="reservant-chip${p === state.currentPlayer ? ' me' : ''}">${p}</span>`).join('')
+    : '<span style="font-size:0.72rem;color:var(--text-muted);font-style:italic;">aucune réservation</span>';
   let btnHtml = '';
   if (state.currentPlayer) {
     if (me) {
-      if (!locked) {
-        btnHtml = `<button class="reserve-btn remove" onclick="removeReservation(${item.id})">Annuler</button>`;
-      } else {
-        btnHtml = `<button class="reserve-btn remove" onclick="removeReservation(${item.id})" title="Les réservations sont verrouillées mais vous pouvez quand même modifier">Annuler*</button>`;
-      }
+      btnHtml = `<button class="reserve-btn remove" onclick="removeReservation(${item.id})">${locked ? 'Annuler*' : 'Annuler'}</button>`;
     } else {
       const full = getMyReservations().length >= 2;
       btnHtml = `<button class="reserve-btn" onclick="addReservation(${item.id})" ${full ? 'disabled title="2 réservations max"' : ''}>Réserver</button>`;
     }
   }
-
   return `<div class="${cardClass}" id="card-${item.id}">
     <div class="item-top">
       <span class="item-slot-badge">${item.slot}</span>
@@ -987,7 +1081,7 @@ function renderItemCard(item) {
       ${stats.map(s => `<span class="stat-tag">${s}</span>`).join('')}
     </div>
     <div class="item-footer">
-      <div class="reservants">${reservantsHtml || '<span style="font-size:0.72rem;color:var(--text-muted);font-style:italic;">aucune réservation</span>'}</div>
+      <div class="reservants">${reservantsHtml}</div>
       <div style="display:flex;align-items:center;gap:4px;">
         ${btnHtml}
         <a class="wowhead-link" href="${item.link}" target="_blank" title="Voir sur Wowhead">WH↗</a>
@@ -1001,8 +1095,9 @@ function renderLockBanner() {
   const unlockBtn = document.getElementById('btn-unlock');
   if (state.lock) {
     banner.classList.remove('hidden');
-    const d = new Date(state.lock.timestamp);
-    document.getElementById('lock-date-label').textContent = `Verrouillé le ${d.toLocaleDateString('fr-BE')} à ${d.toLocaleTimeString('fr-BE', {hour:'2-digit',minute:'2-digit'})} — les modifications ne sont pas exportées`;
+    const d = new Date(state.lock.created_at);
+    document.getElementById('lock-date-label').textContent =
+      `Verrouillé le ${d.toLocaleDateString('fr-BE')} à ${d.toLocaleTimeString('fr-BE',{hour:'2-digit',minute:'2-digit'})} — les modifications ne sont pas exportées`;
     if (state.isRL) unlockBtn.classList.remove('hidden');
     else unlockBtn.classList.add('hidden');
   } else {
@@ -1010,23 +1105,28 @@ function renderLockBanner() {
   }
 }
 
+function renderSlotFilter() {
+  const slots = [...new Set(LOOT_DATA.map(x => x.slot))].sort();
+  const sel = document.getElementById('filter-slot');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Tous les emplacements</option>' +
+    slots.map(s => `<option value="${s}" ${s===cur?'selected':''}}>${s}</option>`).join('');
+}
+
 function render() {
   renderResaSummary();
   renderItems();
   renderLockBanner();
   renderSlotFilter();
-
   // Player display
   if (state.currentPlayer) {
-    document.getElementById('player-name-input').closest('div').previousElementSibling.nextElementSibling.style.display = '';
     document.getElementById('current-player-display').classList.remove('hidden');
     document.getElementById('current-player-name').textContent = state.currentPlayer;
-    document.getElementById('player-name-input').closest('.login-block').classList.add('hidden');
+    document.getElementById('login-block').classList.add('hidden');
   } else {
     document.getElementById('current-player-display').classList.add('hidden');
-    document.getElementById('player-name-input').closest('.login-block').classList.remove('hidden');
+    document.getElementById('login-block').classList.remove('hidden');
   }
-
   // RL panel
   const rlPanel = document.getElementById('rl-panel');
   if (state.isRL) {
@@ -1038,39 +1138,50 @@ function render() {
   }
 }
 
-function renderSlotFilter() {
-  const slots = [...new Set(LOOT_DATA.map(x => x.slot))].sort();
-  const sel = document.getElementById('filter-slot');
-  const cur = sel.value;
-  sel.innerHTML = '<option value="">Tous les emplacements</option>' +
-    slots.map(s => `<option value="${s}" ${s===cur?'selected':''}>${s}</option>`).join('');
-}
-
 // ═══════════════════════════════════════════════════════════════
 // ACTIONS
 // ═══════════════════════════════════════════════════════════════
-function addReservation(itemId) {
+async function addReservation(itemId) {
   if (!state.currentPlayer) { toast('Entre ton pseudo d\'abord !', 'err'); return; }
-  const me = state.currentPlayer;
-  const myResas = getMyReservations();
-  if (myResas.length >= 2) { toast('Tu as déjà 2 réservations (maximum).', 'err'); return; }
+  if (getMyReservations().length >= 2) { toast('Tu as déjà 2 réservations (maximum).', 'err'); return; }
+  if (hasReserved(itemId)) { toast('Tu as déjà réservé cet objet.', 'err'); return; }
+  // Optimistic update
   if (!state.reservations[itemId]) state.reservations[itemId] = [];
-  if (state.reservations[itemId].includes(me)) { toast('Tu as déjà réservé cet objet.', 'err'); return; }
-  state.reservations[itemId].push(me);
-  saveReservations();
-  render();
-  toast('Réservation enregistrée !', 'ok');
+  state.reservations[itemId].push(state.currentPlayer);
+  renderItems(); renderResaSummary();
+  try {
+    await sb.post('reservations', { player_name: state.currentPlayer, item_id: itemId });
+    toast('Réservation enregistrée !', 'ok');
+    setSyncStatus('ok', 'Sauvegardé');
+  } catch(e) {
+    // Rollback
+    state.reservations[itemId] = state.reservations[itemId].filter(p => p !== state.currentPlayer);
+    if (state.reservations[itemId].length === 0) delete state.reservations[itemId];
+    renderItems(); renderResaSummary();
+    toast('Erreur lors de la réservation : ' + e.message, 'err');
+    setSyncStatus('err', 'Erreur');
+  }
 }
 
-function removeReservation(itemId) {
-  const me = state.currentPlayer;
-  if (!me) return;
-  if (!state.reservations[itemId]) return;
-  state.reservations[itemId] = state.reservations[itemId].filter(p => p !== me);
-  if (state.reservations[itemId].length === 0) delete state.reservations[itemId];
-  saveReservations();
-  render();
-  toast('Réservation annulée.', 'ok');
+async function removeReservation(itemId) {
+  if (!state.currentPlayer) return;
+  // Optimistic update
+  const prev = state.reservations[itemId] ? [...state.reservations[itemId]] : [];
+  if (state.reservations[itemId]) {
+    state.reservations[itemId] = state.reservations[itemId].filter(p => p !== state.currentPlayer);
+    if (state.reservations[itemId].length === 0) delete state.reservations[itemId];
+  }
+  renderItems(); renderResaSummary();
+  try {
+    const name = encodeURIComponent(state.currentPlayer);
+    await sb.delete(`reservations?player_name=eq.${name}&item_id=eq.${itemId}`);
+    toast('Réservation annulée.', 'ok');
+  } catch(e) {
+    // Rollback
+    state.reservations[itemId] = prev;
+    renderItems(); renderResaSummary();
+    toast('Erreur lors de la suppression.', 'err');
+  }
 }
 
 window.addReservation = addReservation;
@@ -1078,7 +1189,6 @@ window.removeReservation = removeReservation;
 
 // ─── CSV Export ───
 function buildCSV(source) {
-  // Format: Pseudo IG,RAID,BOSS,OBJET CHOISIT,EMPLACEMENT
   const lines = ['Pseudo IG,RAID,BOSS,OBJET CHOISIT,EMPLACEMENT'];
   for (const [idStr, players] of Object.entries(source)) {
     const id = parseInt(idStr);
@@ -1086,8 +1196,7 @@ function buildCSV(source) {
     if (!item) continue;
     for (const player of players) {
       const objField = `${item.name} - ${item.link}`;
-      // CSV escape
-      const esc = s => s.includes(',') || s.includes('"') ? `"${s.replace(/"/g,'""')}"` : s;
+      const esc = s => s.includes(',') || s.includes('"') ? `"${s.replace(/"/g,'""')}` + '"' : s;
       lines.push([player, item.raid, item.boss, esc(objField), item.slot].join(','));
     }
   }
@@ -1103,11 +1212,9 @@ document.getElementById('btn-confirm-player').addEventListener('click', () => {
   render();
   toast(`Bienvenue, ${val} !`, 'ok');
 });
-
 document.getElementById('player-name-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('btn-confirm-player').click();
 });
-
 document.getElementById('btn-change-player').addEventListener('click', () => {
   state.currentPlayer = '';
   localStorage.removeItem(PLAYER_KEY);
@@ -1129,89 +1236,94 @@ document.getElementById('btn-rl-toggle').addEventListener('click', () => {
 });
 
 // ─── LOCK ───
-document.getElementById('btn-lock').addEventListener('click', () => {
+document.getElementById('btn-lock').addEventListener('click', async () => {
   if (state.lock) { toast('Déjà verrouillé. Déverrouillez d\'abord.', 'err'); return; }
-  if (!confirm('Verrouiller les réservations actuelles ? Les joueurs pourront encore modifier, mais l\'export reflètera cet état.')) return;
-  state.lock = {
-    timestamp: new Date().toISOString(),
-    snapshot: JSON.parse(JSON.stringify(state.reservations))
-  };
-  saveLock();
-  render();
-  toast('Réservations verrouillées !', 'ok');
+  if (!confirm('Verrouiller les réservations actuelles ? L\'export reflétera cet état.')) return;
+  try {
+    const snapshot = JSON.parse(JSON.stringify(state.reservations));
+    const rows = await sb.post('locks', { snapshot });
+    state.lock = rows[0];
+    render();
+    toast('Réservations verrouillées !', 'ok');
+  } catch(e) { toast('Erreur lors du verrouillage : ' + e.message, 'err'); }
 });
 
-document.getElementById('btn-unlock').addEventListener('click', () => {
+document.getElementById('btn-unlock').addEventListener('click', async () => {
+  if (!state.lock) return;
   if (!confirm('Déverrouiller ? Le prochain verrouillage créera un nouvel export.')) return;
-  state.lock = null;
-  saveLock();
-  render();
-  toast('Déverrouillé.', 'ok');
+  try {
+    await sb.delete('locks?id=eq.' + state.lock.id);
+    state.lock = null;
+    render();
+    toast('Déverrouillé.', 'ok');
+  } catch(e) { toast('Erreur lors du déverrouillage.', 'err'); }
 });
 
 // ─── EXPORT ───
 document.getElementById('btn-export').addEventListener('click', () => {
   const source = state.lock ? state.lock.snapshot : state.reservations;
-  const csv = buildCSV(source);
-  document.getElementById('export-textarea').value = csv;
-  const label = state.lock
-    ? `Snapshot verrouillé le ${new Date(state.lock.timestamp).toLocaleString('fr-BE')} — ${Object.values(source).reduce((a,b)=>a+b.length,0)} réservation(s).`
-    : `Données en direct (non verrouillées) — ${Object.values(source).reduce((a,b)=>a+b.length,0)} réservation(s).`;
-  document.getElementById('export-source-label').textContent = label;
+  document.getElementById('export-textarea').value = buildCSV(source);
+  const count = Object.values(source).reduce((a,b) => a + b.length, 0);
+  document.getElementById('export-source-label').textContent = state.lock
+    ? `Snapshot verrouillé le ${new Date(state.lock.created_at).toLocaleString('fr-BE')} — ${count} réservation(s).`
+    : `Données en direct (non verrouillées) — ${count} réservation(s).`;
   document.getElementById('export-modal').classList.add('open');
 });
 
 document.getElementById('btn-copy-csv').addEventListener('click', () => {
-  const ta = document.getElementById('export-textarea');
-  navigator.clipboard.writeText(ta.value).then(() => toast('Copié dans le presse-papier !', 'ok'));
+  navigator.clipboard.writeText(document.getElementById('export-textarea').value)
+    .then(() => toast('Copié dans le presse-papier !', 'ok'));
 });
 
-document.getElementById('close-export-modal').addEventListener('click', () =>
-  document.getElementById('export-modal').classList.remove('open'));
-document.getElementById('btn-close-export').addEventListener('click', () =>
-  document.getElementById('export-modal').classList.remove('open'));
+['close-export-modal', 'btn-close-export'].forEach(id =>
+  document.getElementById(id).addEventListener('click', () =>
+    document.getElementById('export-modal').classList.remove('open')));
 document.getElementById('export-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
 });
 
 // ─── CLEAR ALL ───
-document.getElementById('btn-clear-all').addEventListener('click', () => {
+document.getElementById('btn-clear-all').addEventListener('click', async () => {
   if (!confirm('Vider TOUTES les réservations de tous les joueurs ? Cette action est irréversible.')) return;
-  state.reservations = {};
-  state.lock = null;
-  saveReservations();
-  saveLock();
-  render();
-  toast('Toutes les réservations ont été supprimées.', 'ok');
+  try {
+    // Delete all rows (Supabase requires a filter, use neq on a uuid field that always matches)
+    await sb.delete('reservations?item_id=gte.0');
+    await syncAll(true);
+    toast('Toutes les réservations ont été supprimées.', 'ok');
+  } catch(e) { toast('Erreur : ' + e.message, 'err'); }
 });
 
 // ─── FILTERS ───
-document.getElementById('filter-raid').addEventListener('change', e => {
-  state.filters.raid = e.target.value;
-  renderItems();
-});
-document.getElementById('filter-type').addEventListener('change', e => {
-  state.filters.type = e.target.value;
-  renderItems();
-});
-document.getElementById('filter-slot').addEventListener('change', e => {
-  state.filters.slot = e.target.value;
-  renderItems();
-});
-document.getElementById('search-input').addEventListener('input', e => {
-  state.filters.search = e.target.value;
-  renderItems();
-});
-document.getElementById('filter-mine').addEventListener('change', e => {
-  state.filters.mine = e.target.checked;
-  renderItems();
-});
+document.getElementById('filter-raid').addEventListener('change', e => { state.filters.raid = e.target.value; renderItems(); });
+document.getElementById('filter-type').addEventListener('change', e => { state.filters.type = e.target.value; renderItems(); });
+document.getElementById('filter-slot').addEventListener('change', e => { state.filters.slot = e.target.value; renderItems(); });
+document.getElementById('search-input').addEventListener('input', e => { state.filters.search = e.target.value; renderItems(); });
+document.getElementById('filter-mine').addEventListener('change', e => { state.filters.mine = e.target.checked; renderItems(); });
 
 // ═══════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════
-loadState();
-render();
+(async () => {
+  const overlay = document.getElementById('loading-overlay');
+  const loadMsg = document.getElementById('loading-msg');
+  try {
+    loadMsg.textContent = 'Chargement des réservations…';
+    await syncAll(true);
+    loadMsg.textContent = 'Prêt !';
+    setTimeout(() => overlay.style.display = 'none', 300);
+  } catch(e) {
+    loadMsg.textContent = 'Erreur de connexion. Vérifiez votre réseau.';
+    setSyncStatus('err', 'Hors ligne');
+    // Still show the app
+    setTimeout(() => overlay.style.display = 'none', 2000);
+  }
+  renderSlotFilter();
+  startPolling();
+  // Auto-restore player
+  if (state.currentPlayer) {
+    document.getElementById('player-name-input').value = state.currentPlayer;
+  }
+})();
 </script>
 </body>
 </html>
