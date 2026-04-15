@@ -1,0 +1,1217 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HadronLoot — Réservations Midnight</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #c9a227;
+    --gold-light: #e8c96a;
+    --gold-dim: #7a5f10;
+    --void: #0a0812;
+    --void-2: #110e1f;
+    --void-3: #1a1530;
+    --void-4: #241e42;
+    --void-5: #2e2756;
+    --surface: #16122a;
+    --surface-2: #1e1936;
+    --border: rgba(201,162,39,0.18);
+    --border-hover: rgba(201,162,39,0.45);
+    --text: #ede8d8;
+    --text-dim: #8b8474;
+    --text-muted: #5a5448;
+    --red: #c94040;
+    --red-light: #e87070;
+    --green: #3db37c;
+    --green-light: #6fd4a0;
+    --blue: #4a7fd4;
+    --blue-light: #7aabf0;
+    --purple: #9b6fd4;
+    --raid-void: #c94a27;
+    --raid-dream: #3d8fb3;
+    --raid-qd: #c9a227;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--void);
+    color: var(--text);
+    font-family: 'Crimson Pro', Georgia, serif;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse 80% 40% at 50% 0%, rgba(90,40,180,0.12) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 30% at 80% 100%, rgba(201,162,39,0.06) 0%, transparent 60%);
+  }
+
+  /* ─── HEADER ─── */
+  .site-header {
+    border-bottom: 0.5px solid var(--border);
+    padding: 1.25rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(10,8,18,0.85);
+    backdrop-filter: blur(8px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    font-family: 'Cinzel', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .logo span { color: var(--text-dim); font-weight: 400; font-size: 0.8rem; display: block; letter-spacing: 0.04em; }
+
+  .header-actions { display: flex; gap: 10px; align-items: center; }
+
+  /* ─── BUTTONS ─── */
+  .btn {
+    font-family: 'Cinzel', serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 8px 18px;
+    border-radius: 3px;
+    border: 0.5px solid var(--border);
+    cursor: pointer;
+    transition: all 0.18s;
+    background: transparent;
+    color: var(--text-dim);
+  }
+  .btn:hover { border-color: var(--border-hover); color: var(--text); background: rgba(201,162,39,0.06); }
+  .btn.btn-gold {
+    background: var(--gold);
+    color: var(--void);
+    border-color: var(--gold);
+    font-weight: 700;
+  }
+  .btn.btn-gold:hover { background: var(--gold-light); }
+  .btn.btn-red { border-color: rgba(201,64,64,0.4); color: var(--red-light); }
+  .btn.btn-red:hover { background: rgba(201,64,64,0.12); }
+  .btn.btn-green { border-color: rgba(61,179,124,0.4); color: var(--green-light); }
+  .btn.btn-green:hover { background: rgba(61,179,124,0.12); }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* ─── LAYOUT ─── */
+  .app-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    min-height: calc(100vh - 58px);
+  }
+
+  /* ─── SIDEBAR ─── */
+  .sidebar {
+    border-right: 0.5px solid var(--border);
+    background: var(--void-2);
+    padding: 1.5rem 1.25rem;
+    position: sticky;
+    top: 58px;
+    height: calc(100vh - 58px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .section-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.6rem;
+  }
+
+  /* Player login */
+  .login-block { display: flex; flex-direction: column; gap: 8px; }
+  .player-input {
+    background: var(--void-3);
+    border: 0.5px solid var(--border);
+    border-radius: 3px;
+    color: var(--text);
+    font-family: 'Crimson Pro', serif;
+    font-size: 1rem;
+    padding: 8px 12px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.18s;
+  }
+  .player-input:focus { border-color: var(--gold-dim); }
+  .player-input::placeholder { color: var(--text-muted); }
+
+  /* Current reservations summary */
+  .resa-summary {
+    background: var(--void-3);
+    border: 0.5px solid var(--border);
+    border-radius: 4px;
+    padding: 12px;
+  }
+  .resa-slot {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 0.5px solid rgba(201,162,39,0.08);
+  }
+  .resa-slot:last-child { border-bottom: none; padding-bottom: 0; }
+  .resa-slot:first-child { padding-top: 0; }
+  .resa-num {
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--gold);
+    background: rgba(201,162,39,0.1);
+    border: 0.5px solid rgba(201,162,39,0.25);
+    border-radius: 2px;
+    padding: 2px 6px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .resa-info { flex: 1; min-width: 0; }
+  .resa-name { font-size: 0.9rem; color: var(--text); line-height: 1.3; }
+  .resa-boss { font-size: 0.75rem; color: var(--text-dim); margin-top: 2px; }
+  .resa-empty { color: var(--text-muted); font-style: italic; font-size: 0.85rem; }
+  .resa-remove {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0 2px;
+    flex-shrink: 0;
+    transition: color 0.15s;
+    line-height: 1;
+  }
+  .resa-remove:hover { color: var(--red-light); }
+
+  /* Filters */
+  .filter-group { display: flex; flex-direction: column; gap: 6px; }
+  .filter-select {
+    background: var(--void-3);
+    border: 0.5px solid var(--border);
+    border-radius: 3px;
+    color: var(--text);
+    font-family: 'Crimson Pro', serif;
+    font-size: 0.9rem;
+    padding: 7px 10px;
+    width: 100%;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23c9a227'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 28px;
+  }
+  .filter-select:focus { border-color: var(--gold-dim); }
+
+  .search-input {
+    background: var(--void-3);
+    border: 0.5px solid var(--border);
+    border-radius: 3px;
+    color: var(--text);
+    font-family: 'Crimson Pro', serif;
+    font-size: 0.9rem;
+    padding: 7px 10px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.18s;
+  }
+  .search-input:focus { border-color: var(--gold-dim); }
+  .search-input::placeholder { color: var(--text-muted); }
+
+  /* ─── MAIN CONTENT ─── */
+  .main-content { padding: 2rem; overflow-y: auto; }
+
+  /* Tabs (Boss groups) */
+  .boss-section { margin-bottom: 2.5rem; }
+  .boss-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .raid-badge {
+    font-family: 'Cinzel', serif;
+    font-size: 0.58rem;
+    letter-spacing: 0.1em;
+    padding: 3px 8px;
+    border-radius: 2px;
+    text-transform: uppercase;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .raid-void { background: rgba(201,74,39,0.15); color: #e87050; border: 0.5px solid rgba(201,74,39,0.3); }
+  .raid-dream { background: rgba(61,143,179,0.15); color: #7ac0e0; border: 0.5px solid rgba(61,143,179,0.3); }
+  .raid-qd { background: rgba(201,162,39,0.12); color: var(--gold-light); border: 0.5px solid rgba(201,162,39,0.25); }
+
+  .boss-name {
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.04em;
+  }
+  .boss-count {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  /* Item grid */
+  .items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 10px;
+  }
+
+  .item-card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: 4px;
+    padding: 12px 14px;
+    transition: border-color 0.18s, background 0.18s;
+    cursor: pointer;
+    position: relative;
+  }
+  .item-card:hover { border-color: var(--border-hover); background: var(--surface-2); }
+  .item-card.selected {
+    border-color: var(--gold);
+    background: rgba(201,162,39,0.07);
+  }
+  .item-card.reserved-by-me {
+    border-color: rgba(61,179,124,0.5);
+    background: rgba(61,179,124,0.05);
+  }
+  .item-card.reserved-by-me:hover { border-color: rgba(61,179,124,0.8); }
+
+  .item-top { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+  .item-slot-badge {
+    font-size: 0.62rem;
+    padding: 2px 7px;
+    border-radius: 2px;
+    background: var(--void-4);
+    color: var(--text-dim);
+    border: 0.5px solid rgba(255,255,255,0.07);
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.05em;
+    margin-top: 2px;
+  }
+  .item-name {
+    font-size: 0.98rem;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.3;
+    flex: 1;
+  }
+  .item-meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+  .type-badge {
+    font-size: 0.7rem;
+    padding: 2px 7px;
+    border-radius: 2px;
+  }
+  .type-arme { background: rgba(201,64,64,0.12); color: #e87070; border: 0.5px solid rgba(201,64,64,0.25); }
+  .type-tissu { background: rgba(107,85,179,0.15); color: #bba0e8; border: 0.5px solid rgba(107,85,179,0.3); }
+  .type-cuir { background: rgba(150,100,40,0.15); color: #d4a855; border: 0.5px solid rgba(150,100,40,0.3); }
+  .type-maille { background: rgba(80,130,180,0.15); color: #80b8e8; border: 0.5px solid rgba(80,130,180,0.3); }
+  .type-plaque { background: rgba(120,120,140,0.15); color: #c0c0d0; border: 0.5px solid rgba(120,120,140,0.3); }
+  .type-bijou { background: rgba(61,179,124,0.12); color: #6fd4a0; border: 0.5px solid rgba(61,179,124,0.25); }
+  .type-bague { background: rgba(201,162,39,0.12); color: var(--gold-light); border: 0.5px solid rgba(201,162,39,0.25); }
+  .type-collier { background: rgba(201,162,39,0.12); color: var(--gold-light); border: 0.5px solid rgba(201,162,39,0.25); }
+  .type-cape { background: rgba(90,130,90,0.15); color: #90c890; border: 0.5px solid rgba(90,130,90,0.3); }
+  .type-token { background: rgba(155,111,212,0.15); color: #c0a0e8; border: 0.5px solid rgba(155,111,212,0.3); }
+  .stat-tag { font-size: 0.68rem; color: var(--text-muted); padding: 2px 6px; background: var(--void-4); border-radius: 2px; }
+
+  .item-footer { display: flex; align-items: center; justify-content: space-between; }
+  .reservants {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    flex: 1;
+  }
+  .reservant-chip {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 2px;
+    background: rgba(201,162,39,0.08);
+    color: var(--gold-light);
+    border: 0.5px solid rgba(201,162,39,0.2);
+  }
+  .reservant-chip.me {
+    background: rgba(61,179,124,0.12);
+    color: var(--green-light);
+    border-color: rgba(61,179,124,0.3);
+    font-weight: 600;
+  }
+  .reserve-btn {
+    font-family: 'Cinzel', serif;
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    padding: 5px 12px;
+    border-radius: 2px;
+    border: 0.5px solid var(--border);
+    cursor: pointer;
+    background: transparent;
+    color: var(--text-dim);
+    transition: all 0.15s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .reserve-btn:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); background: rgba(201,162,39,0.08); }
+  .reserve-btn.remove { border-color: rgba(201,64,64,0.3); color: var(--red-light); }
+  .reserve-btn.remove:hover:not(:disabled) { background: rgba(201,64,64,0.12); }
+  .reserve-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .wowhead-link {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    margin-left: 8px;
+    flex-shrink: 0;
+    opacity: 0.6;
+    transition: opacity 0.15s;
+  }
+  .wowhead-link:hover { opacity: 1; color: var(--gold-light); }
+
+  /* ─── RL PANEL ─── */
+  .rl-panel {
+    background: var(--void-2);
+    border: 0.5px solid rgba(201,162,39,0.3);
+    border-radius: 4px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .rl-panel-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .rl-panel-title::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: var(--gold);
+    border-radius: 50%;
+  }
+  .rl-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  /* Lock status banner */
+  .lock-banner {
+    background: rgba(201,162,39,0.08);
+    border: 0.5px solid rgba(201,162,39,0.3);
+    border-radius: 4px;
+    padding: 10px 14px;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.88rem;
+  }
+  .lock-banner .lock-icon { font-size: 1rem; }
+  .lock-info { flex: 1; }
+  .lock-info strong { color: var(--gold-light); }
+  .lock-info small { display: block; color: var(--text-muted); font-size: 0.78rem; margin-top: 1px; }
+
+  /* Export textarea */
+  .export-area {
+    width: 100%;
+    height: 200px;
+    background: var(--void-3);
+    border: 0.5px solid var(--border);
+    border-radius: 3px;
+    color: var(--text);
+    font-family: 'Courier New', monospace;
+    font-size: 0.78rem;
+    padding: 10px;
+    resize: vertical;
+    outline: none;
+  }
+
+  /* Modal overlay */
+  .modal-bg {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-bg.open { display: flex; }
+  .modal {
+    background: var(--void-2);
+    border: 0.5px solid var(--border-hover);
+    border-radius: 6px;
+    padding: 2rem;
+    max-width: 560px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  .modal-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--gold);
+    margin-bottom: 1rem;
+  }
+  .modal-close {
+    float: right;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+  .modal-close:hover { color: var(--text); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: var(--void-3);
+    border: 0.5px solid var(--border);
+    border-radius: 4px;
+    padding: 10px 18px;
+    font-size: 0.88rem;
+    color: var(--text);
+    z-index: 300;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.25s, transform 0.25s;
+    pointer-events: none;
+    max-width: 320px;
+  }
+  .toast.visible { opacity: 1; transform: translateY(0); }
+  .toast.toast-ok { border-color: rgba(61,179,124,0.5); color: var(--green-light); }
+  .toast.toast-err { border-color: rgba(201,64,64,0.5); color: var(--red-light); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--void-5); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--gold-dim); }
+
+  .hidden { display: none !important; }
+  .no-results { color: var(--text-muted); font-style: italic; font-size: 0.9rem; padding: 1rem 0; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo">
+    HadronLoot RL
+    <span>Midnight — Saison 1</span>
+  </div>
+  <div class="header-actions">
+    <span id="rl-toggle-hint" style="font-size:0.78rem;color:var(--text-muted);margin-right:4px;">Mode RL :</span>
+    <button class="btn" id="btn-rl-toggle">Activer</button>
+  </div>
+</header>
+
+<div class="app-layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div>
+      <div class="section-label">Ton pseudo</div>
+      <div class="login-block">
+        <input class="player-input" id="player-name-input" type="text" placeholder="Ex: Thrall" autocomplete="off" spellcheck="false" />
+        <button class="btn btn-gold" id="btn-confirm-player" style="width:100%;">Confirmer</button>
+      </div>
+      <div id="current-player-display" class="hidden" style="margin-top:8px;font-size:0.85rem;color:var(--text-dim);">
+        Connecté en tant que <strong id="current-player-name" style="color:var(--gold-light);"></strong>
+        <button class="btn btn-red" id="btn-change-player" style="font-size:0.6rem;padding:3px 8px;margin-left:8px;">Changer</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Mes réservations (max 2)</div>
+      <div class="resa-summary" id="resa-summary">
+        <div class="resa-slot">
+          <span class="resa-num">1</span>
+          <div class="resa-info"><div class="resa-empty">— aucune —</div></div>
+        </div>
+        <div class="resa-slot">
+          <span class="resa-num">2</span>
+          <div class="resa-info"><div class="resa-empty">— aucune —</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Filtres</div>
+      <div class="filter-group">
+        <input class="search-input" id="search-input" type="text" placeholder="Chercher un objet..." autocomplete="off" />
+        <select class="filter-select" id="filter-raid">
+          <option value="">Tous les raids</option>
+          <option value="FLECHE DU VIDE">Flèche du Vide</option>
+          <option value="FAILLE DU REVE">Faille du Rêve</option>
+          <option value="MARCHE SUR QUEL'DANAS">Marche sur Quel'Danas</option>
+        </select>
+        <select class="filter-select" id="filter-type">
+          <option value="">Tous les types</option>
+          <option value="Arme">Arme</option>
+          <option value="Tissu">Tissu</option>
+          <option value="Cuir">Cuir</option>
+          <option value="Maille">Maille</option>
+          <option value="Plaque">Plaque</option>
+          <option value="Bijou">Bijou</option>
+          <option value="Bague">Bague</option>
+          <option value="Collier">Collier</option>
+          <option value="Cape">Cape</option>
+          <option value="Token">Token</option>
+        </select>
+        <select class="filter-select" id="filter-slot">
+          <option value="">Tous les emplacements</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:8px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;margin-top:2px;">
+          <input type="checkbox" id="filter-mine" style="accent-color:var(--gold);" />
+          Mes réservations seulement
+        </label>
+      </div>
+    </div>
+
+    <div style="margin-top:auto;padding-top:1rem;border-top:0.5px solid var(--border);">
+      <div style="font-size:0.72rem;color:var(--text-muted);">Données stockées localement dans ton navigateur. Le RL exporte le CSV pour l'addon.</div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-content" id="main-content">
+
+    <!-- RL Panel -->
+    <div class="rl-panel hidden" id="rl-panel">
+      <div class="rl-panel-title">Panneau Raid Leader</div>
+      <div class="rl-actions">
+        <button class="btn btn-gold" id="btn-lock">🔒 Verrouiller les réservations</button>
+        <button class="btn" id="btn-export">📋 Exporter CSV pour addon</button>
+        <button class="btn btn-red" id="btn-clear-all">🗑 Vider toutes les résa</button>
+      </div>
+    </div>
+
+    <!-- Lock banner -->
+    <div class="lock-banner hidden" id="lock-banner">
+      <span class="lock-icon">🔒</span>
+      <div class="lock-info">
+        <strong>Réservations verrouillées</strong>
+        <small id="lock-date-label"></small>
+      </div>
+      <button class="btn btn-rl-only hidden" id="btn-unlock" style="font-size:0.65rem;padding:5px 12px;">Déverrouiller</button>
+    </div>
+
+    <!-- Items listing -->
+    <div id="items-container"></div>
+
+  </main>
+</div>
+
+<!-- Export Modal -->
+<div class="modal-bg" id="export-modal">
+  <div class="modal">
+    <button class="modal-close" id="close-export-modal">✕</button>
+    <div class="modal-title">Export CSV — HadronLoot RL</div>
+    <p style="font-size:0.88rem;color:var(--text-dim);margin-bottom:1rem;">Copie ce texte dans l'addon via <code style="background:var(--void-4);padding:1px 5px;border-radius:2px;font-size:0.78rem;">/hl import</code></p>
+    <textarea class="export-area" id="export-textarea" readonly></textarea>
+    <div style="display:flex;gap:10px;margin-top:1rem;">
+      <button class="btn btn-gold" id="btn-copy-csv">Copier dans le presse-papier</button>
+      <button class="btn" id="btn-close-export">Fermer</button>
+    </div>
+    <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.75rem;" id="export-source-label"></p>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// LOOT DATA — extrait du CSV
+// ═══════════════════════════════════════════════════════════════
+const LOOT_DATA = [
+  {raid:"FLECHE DU VIDE",boss:"IMPERATOR AVERZIAN",order:1,name:"Poids du commandement",slot:"Intel Masse",type:"Arme",stat1:"Crit",stat2:"Poly",link:"https://www.wowhead.com/fr/item=249293/weight-of-command?bonus=12785",id:249293},
+  {raid:"FLECHE DU VIDE",boss:"IMPERATOR AVERZIAN",order:1,name:"Fusil frappe-soleil",slot:"Fusil",type:"Arme",stat1:"Hate",stat2:"Maitrise",link:"https://www.wowhead.com/fr/item=249279/sunstrike-rifle?bonus=12785",id:249279},
+  {raid:"FLECHE DU VIDE",boss:"IMPERATOR AVERZIAN",order:1,name:"Barricade de noble détermination",slot:"Bouclier",type:"Arme",stat1:"Poly",stat2:"Crit",link:"https://www.wowhead.com/fr/item=249275/bulwark-of-noble-resolve?bonus=12785",id:249275},
+  {raid:"FLECHE DU VIDE",boss:"IMPERATOR AVERZIAN",order:1,name:"Baudrier de la marche infinie",slot:"Taille",type:"Tissu",stat1:"Hate",stat2:"Crit",link:"https://www.wowhead.com/fr/item=249319/endless-march-waistwrap?bonus=12785",id:249319},
+  {raid:"FLECHE DU VIDE",boss:"IMPERATOR AVERZIAN",order:1,name:"Jambières de l'avancée dévorante",slot:"Jambe",type:"Tissu",stat1:"Crit",stat2:"Poly",link:"https://www.wowhead.com/fr/item=249323/leggings-of-the-devouring-advance?bonus=12785",id:249323},
+  {raid:"FLECHE DU VIDE",boss:"IMPERATOR AVERZIAN",order:1,name:"Visage de la nuit dévorante",slot:"Tête",type:"Cuir",stat1:"Maitrise",stat2:"Crit",link:"https://www.wowhead.com/fr/item=249306/devouring-nights-visage?bonus=12785",id:249306},
+  {raid:"FLECHE DU VIDE",boss:"IMPERATOR AVERZIAN",order:1,name:"Frappe-tibias réclamés par le Vide",slot:"Pied",type:"Cuir",stat1:"Poly",stat2:"Hate",link:"https://www.wowhead.com/fr/item=249334/void-claimed-shinkickers?bonus=12785",id:249334},
+  {raid:"FLECHE DU VIDE",boss:"IMPERATOR AVERZIAN",order:1,name:"Robe de lien du Vide",slot:"Torse",type:"Maille",stat1:"Hate",stat2:"Crit",link:"https://www.wowhead.com/fr/item=249310/robes-of-the-voidbound?bonus=12785",id:249310},
+  {raid:"FLECHE DU VIDE",boss:"IMPERATOR AVERZIAN",order:1,name:"Solerets d'obscurcissement",slot:"Pied",type:"Maille",stat1:"Poly",stat2:"Crit",link:"https://www.wowhead.com/fr/item=249320/sabatons-of-obscurement?bonus=12785",id:249320},
+  {raid:"FLECHE DU VIDE",boss:"IMPERATOR AVERZIAN",order:1,name:"Brassards de marche de la Lumière",slot:"Poignets",type:"Plaque",stat1:"Hate",stat2:"Maitrise",link:"https://www.wowhead.com/fr/item=249326/lights-march-bracers?bonus=12785",id:249326},
+  {raid:"FLECHE DU VIDE",boss:"IMPERATOR AVERZIAN",order:1,name:"Spallières jugées par la Lumière",slot:"Epaule",type:"Plaque",stat1:"Crit",stat2:"Hate",link:"https://www.wowhead.com/fr/item=249313/light-judged-spaulders?bonus=12785",id:249313},
+  {raid:"FLECHE DU VIDE",boss:"IMPERATOR AVERZIAN",order:1,name:"Bannière de l'imperator",slot:"Dos",type:"Cape",stat1:"Crit",stat2:"Poly",link:"https://www.wowhead.com/fr/item=249335/imperators-banner?bonus=12785",id:249335},
+  {raid:"FLECHE DU VIDE",boss:"IMPERATOR AVERZIAN",order:1,name:"Guidon de la compagnie de la Lumière",slot:"Trinket",type:"Bijou",stat1:"Agi",stat2:"Force",link:"https://www.wowhead.com/fr/item=249344/light-company-guidon?bonus=12785",id:249344},
+  {raid:"FLECHE DU VIDE",boss:"VORASIUS",order:2,name:"Allonge inéluctable",slot:"Agi Arme d'hast",type:"Arme",stat1:"Crit",stat2:"Maitrise",link:"https://www.wowhead.com/fr/item=249302/inescapable-reach?bonus=12786",id:249302},
+  {raid:"FLECHE DU VIDE",boss:"VORASIUS",order:2,name:"Victoire affamée",slot:"Agi Dague",type:"Arme",stat1:"Maitrise",stat2:"Poly",link:"https://www.wowhead.com/fr/item=249925/hungering-victory?bonus=12786",id:249925},
+  {raid:"FLECHE DU VIDE",boss:"VORASIUS",order:2,name:"Grimoire de la Lumière éternelle",slot:"Intel Main gauche",type:"Arme",stat1:"Crit",stat2:"Hate",link:"https://www.wowhead.com/fr/item=249276/grimoire-of-the-eternal-light?bonus=12786",id:249276},
+  {raid:"FLECHE DU VIDE",boss:"VORASIUS",order:2,name:"Bandelettes voraces",slot:"Poignets",type:"Tissu",stat1:"Hate",stat2:"Maitrise",link:"https://www.wowhead.com/fr/item=249315/voracious-wristwraps?bonus=12786",id:249315},
+  {raid:"FLECHE DU VIDE",boss:"VORASIUS",order:2,name:"Brassards dépecés par le Vide",slot:"Poignets",type:"Cuir",stat1:"Crit",stat2:"Hate",link:"https://www.wowhead.com/fr/item=249327/void-skinned-bracers?bonus=12786",id:249327},
+  {raid:"FLECHE DU VIDE",boss:"VORASIUS",order:2,name:"Semonce de frénésie",slot:"Tête",type:"Maille",stat1:"Crit",stat2:"Hate",link:"https://www.wowhead.com/fr/item=249317/frenzys-rebuke?bonus=12786",id:249317},
+  {raid:"FLECHE DU VIDE",boss:"VORASIUS",order:2,name:"Croquenots anti-parasites",slot:"Pied",type:"Plaque",stat1:"Maitrise",stat2:"Hate",link:"https://www.wowhead.com/fr/item=249332/parasite-stompers?bonus=12786",id:249332},
+  {raid:"FLECHE DU VIDE",boss:"VORASIUS",order:2,name:"Chevalière de la bête affamée",slot:"Bague",type:"Bague",stat1:"Crit",stat2:"Poly",link:"https://www.wowhead.com/fr/item=249336/signet-of-the-starved-beast?bonus=12786",id:249336},
+  {raid:"FLECHE DU VIDE",boss:"VORASIUS",order:2,name:"Cœur de faim ancienne",slot:"Trinket",type:"Bijou",stat1:"Force",stat2:"Force",link:"https://www.wowhead.com/fr/item=249342/heart-of-ancient-hunger?bonus=12786",id:249342},
+  {raid:"FLECHE DU VIDE",boss:"VORASIUS",order:2,name:"Cœur-de-néant affamé forgé dans le Vide",slot:"Token",type:"Plaque",stat1:"",stat2:"",link:"https://www.wowhead.com/fr/item=249354",id:249354},
+  {raid:"FLECHE DU VIDE",boss:"VORASIUS",order:2,name:"Cœur-de-néant affamé moulé de Vide",slot:"Token",type:"Maille",stat1:"",stat2:"",link:"https://www.wowhead.com/fr/item=249353",id:249353},
+  {raid:"FLECHE DU VIDE",boss:"VORASIUS",order:2,name:"Cœur-de-néant affamé tanné par le Vide",slot:"Token",type:"Cuir",stat1:"",stat2:"",link:"https://www.wowhead.com/fr/item=249352",id:249352},
+  {raid:"FLECHE DU VIDE",boss:"VORASIUS",order:2,name:"Cœur-de-néant affamé tissé de Vide",slot:"Token",type:"Tissu",stat1:"",stat2:"",link:"https://www.wowhead.com/fr/item=249351",id:249351},
+  {raid:"FLECHE DU VIDE",boss:"FALLEN-KING SALHADAAR",order:3,name:"Lames de poings du tourmenteur",slot:"Force 1M Epée",type:"Arme",stat1:"Crit",stat2:"Maitrise",link:"https://www.wowhead.com/fr/item=249298/tormentors-bladed-fists?bonus=12786",id:249298},
+  {raid:"FLECHE DU VIDE",boss:"FALLEN-KING SALHADAAR",order:3,name:"Lames du crépuscule final",slot:"Agi Arme de Pugilat",type:"Arme",stat1:"Hate",stat2:"Poly",link:"https://www.wowhead.com/fr/item=249281",id:249281},
+  {raid:"FLECHE DU VIDE",boss:"FALLEN-KING SALHADAAR",order:3,name:"Grande tenue despotique",slot:"Torse",type:"Tissu",stat1:"Maitrise",stat2:"Crit",link:"https://www.wowhead.com/fr/item=249308/despotic-raiment?bonus=12786",id:249308},
+  {raid:"FLECHE DU VIDE",boss:"FALLEN-KING SALHADAAR",order:3,name:"Écharpe du Crépuscule dénaturé",slot:"Taille",type:"Cuir",stat1:"Maitrise",stat2:"Poly",link:"https://www.wowhead.com/fr/item=249314/twisted-twilight-sash?bonus=12786",id:249314},
+  {raid:"FLECHE DU VIDE",boss:"FALLEN-KING SALHADAAR",order:3,name:"Crispins du roi déchu",slot:"Poignets",type:"Maille",stat1:"Maitrise",stat2:"Crit",link:"https://www.wowhead.com/fr/item=249304/fallen-kings-cuffs?bonus=12786",id:249304},
+  {raid:"FLECHE DU VIDE",boss:"FALLEN-KING SALHADAAR",order:3,name:"Couronne du tyran brisé",slot:"Tête",type:"Plaque",stat1:"Poly",stat2:"Hate",link:"https://www.wowhead.com/fr/item=249316/crown-of-the-fractured-tyrant?bonus=12786",id:249316},
+  {raid:"FLECHE DU VIDE",boss:"FALLEN-KING SALHADAAR",order:3,name:"Ruban de malveillance enroulée",slot:"Cou",type:"Collier",stat1:"Crit",stat2:"Hate",link:"https://www.wowhead.com/fr/item=249337/ribbon-of-coiled-malice?bonus=12786",id:249337},
+  {raid:"FLECHE DU VIDE",boss:"FALLEN-KING SALHADAAR",order:3,name:"Saturateur du Vide instable",slot:"Trinket",type:"Bijou",stat1:"Intel",stat2:"",link:"https://www.wowhead.com/fr/item=249341/volatile-void-suffuser?bonus=12786",id:249341},
+  {raid:"FLECHE DU VIDE",boss:"FALLEN-KING SALHADAAR",order:3,name:"Bandelettes de folie cosmique",slot:"Trinket",type:"Bijou",stat1:"Intel",stat2:"",link:"https://www.wowhead.com/fr/item=249340/wraps-of-cosmic-madness?bonus=12786",id:249340},
+  {raid:"FLECHE DU VIDE",boss:"FALLEN-KING SALHADAAR",order:3,name:"Cœur-de-néant fragilisé forgé dans le Vide",slot:"Token",type:"Plaque",stat1:"",stat2:"",link:"https://www.wowhead.com/fr/item=249366",id:249366},
+  {raid:"FLECHE DU VIDE",boss:"FALLEN-KING SALHADAAR",order:3,name:"Cœur-de-néant fragilisé moulé de Vide",slot:"Token",type:"Maille",stat1:"",stat2:"",link:"https://www.wowhead.com/fr/item=249365",id:249365},
+  {raid:"FLECHE DU VIDE",boss:"FALLEN-KING SALHADAAR",order:3,name:"Cœur-de-néant fragilisé tanné par le Vide",slot:"Token",type:"Cuir",stat1:"",stat2:"",link:"https://www.wowhead.com/fr/item=249364",id:249364},
+  {raid:"FLECHE DU VIDE",boss:"FALLEN-KING SALHADAAR",order:3,name:"Cœur-de-néant fragilisé tissé de Vide",slot:"Token",type:"Tissu",stat1:"",stat2:"",link:"https://www.wowhead.com/fr/item=249363",id:249363},
+  {raid:"FLECHE DU VIDE",boss:"VALEGOR & EZZORAK",order:4,name:"Caresse des frères de couvée",slot:"Agi Masse",type:"Arme",stat1:"Maitrise",stat2:"Hate",link:"https://www.wowhead.com/fr/item=249287/clutchmates-caress?bonus=12787",id:249287},
+  {raid:"FLECHE DU VIDE",boss:"VALEGOR & EZZORAK",order:4,name:"Solglaive blasonné",slot:"Glaive de guerre",type:"Arme",stat1:"Crit",stat2:"Maitrise",link:"https://www.wowhead.com/fr/item=249280/emblazoned-sunglaive?bonus=12787",id:249280},
+  {raid:"FLECHE DU VIDE",boss:"VALEGOR & EZZORAK",order:4,name:"Mules de la flamme de minuit",slot:"Pied",type:"Tissu",stat1:"Crit",stat2:"Hate",link:"https://www.wowhead.com/fr/item=249305/slippers-of-the-midnight-flame?bonus=12787",id:249305},
+  {raid:"FLECHE DU VIDE",boss:"VALEGOR & EZZORAK",order:4,name:"Poignes redoutables de Vaelgor",slot:"Hands",type:"Cuir",stat1:"Crit",stat2:"Maitrise",link:"https://www.wowhead.com/fr/item=249321/vaelgors-fearsome-grasp?bonus=12787",id:249321},
+  {raid:"FLECHE DU VIDE",boss:"VALEGOR & EZZORAK",order:4,name:"Épaulettes d'effroi de marchenéant",slot:"Epaule",type:"Maille",stat1:"Crit",stat2:"Maitrise",link:"https://www.wowhead.com/fr/item=249318/nullwalkers-dread-epaulettes?bonus=12787",id:249318},
+  {raid:"FLECHE DU VIDE",boss:"VALEGOR & EZZORAK",order:4,name:"Lien d'obscurité d'Ezzorak",slot:"Taille",type:"Plaque",stat1:"Hate",stat2:"Maitrise",link:"https://www.wowhead.com/fr/item=249331/ezzoraks-gloombind?bonus=12787",id:249331},
+  {raid:"FLECHE DU VIDE",boss:"VALEGOR & EZZORAK",order:4,name:"Cape du Néant draconique",slot:"Dos",type:"Cape",stat1:"Hate",stat2:"Maitrise",link:"https://www.wowhead.com/fr/item=249370/draconic-nullcape?bonus=12787",id:249370},
+  {raid:"FLECHE DU VIDE",boss:"VALEGOR & EZZORAK",order:4,name:"Écaille-d'effroi de tristegerbe",slot:"Trinket",type:"Bijou",stat1:"Crit",stat2:"",link:"https://www.wowhead.com/fr/item=249339/gloom-spattered-dreadscale?bonus=12787",id:249339},
+  {raid:"FLECHE DU VIDE",boss:"VALEGOR & EZZORAK",order:4,name:"Ultime regard de Vaelgor",slot:"Trinket",type:"Bijou",stat1:"Intel",stat2:"",link:"https://www.wowhead.com/fr/item=249346/vaelgors-final-stare?bonus=12787",id:249346},
+  {raid:"FLECHE DU VIDE",boss:"VALEGOR & EZZORAK",order:4,name:"Cœur-de-néant corrompu forgé dans le Vide",slot:"Token",type:"Plaque",stat1:"",stat2:"",link:"https://www.wowhead.com/fr/item=249362",id:249362},
+  {raid:"FLECHE DU VIDE",boss:"VALEGOR & EZZORAK",order:4,name:"Cœur-de-néant corrompu moulé de Vide",slot:"Token",type:"Maille",stat1:"",stat2:"",link:"https://www.wowhead.com/fr/item=249361",id:249361},
+  {raid:"FLECHE DU VIDE",boss:"VALEGOR & EZZORAK",order:4,name:"Cœur-de-néant corrompu tanné par le Vide",slot:"Token",type:"Cuir",stat1:"",stat2:"",link:"https://www.wowhead.com/fr/item=249360",id:249360},
+  {raid:"FLECHE DU VIDE",boss:"VALEGOR & EZZORAK",order:4,name:"Cœur-de-néant corrompu tissé de Vide",slot:"Token",type:"Tissu",stat1:"",stat2:"",link:"https://www.wowhead.com/fr/item=249359",id:249359},
+  {raid:"FLECHE DU VIDE",boss:"LIGHTBLINDED VANGUARD",order:5,name:"Jugement final de Bellamy",slot:"Force 2M Masse",type:"Arme",stat1:"Hate",stat2:"Crit",link:"https://www.wowhead.com/fr/item=249277/bellamys-final-judgement?bonus=12787",id:249277},
+  {raid:"FLECHE DU VIDE",boss:"LIGHTBLINDED VANGUARD",order:5,name:"Lame du verdict aveugle",slot:"Intel Epée",type:"Arme",stat1:"Hate",stat2:"Maitrise",link:"https://www.wowhead.com/fr/item=249294/blade-of-the-blind-verdict?bonus=12787",id:249294},
+  {raid:"FLECHE DU VIDE",boss:"LIGHTBLINDED VANGUARD",order:5,name:"Poignes de l'aumônière de guerre",slot:"Hands",type:"Tissu",stat1:"Hate",stat2:"Poly",link:"https://www.wowhead.com/fr/item=249330/war-chaplains-grips?bonus=12787",id:249330},
+  {raid:"FLECHE DU VIDE",boss:"LIGHTBLINDED VANGUARD",order:5,name:"Spallières en lumécorce fleurie",slot:"Epaule",type:"Cuir",stat1:"Crit",stat2:"Poly",link:"https://www.wowhead.com/fr/item=249333/blooming-barklight-spaulders?bonus=12787",id:249333},
+  {raid:"FLECHE DU VIDE",boss:"LIGHTBLINDED VANGUARD",order:5,name:"Corde cintrée du jugement",slot:"Taille",type:"Maille",stat1:"Crit",stat2:"Poly",link:"https://www.wowhead.com/fr/item=249303/waistcord-of-the-judged?bonus=12787",id:249303},
+  {raid:"FLECHE DU VIDE",boss:"LIGHTBLINDED VANGUARD",order:5,name:"Grèves sangrelumes",slot:"Jambe",type:"Plaque",stat1:"Maitrise",stat2:"Hate",link:"https://www.wowhead.com/fr/item=249311/lightblood-greaves?bonus=12787",id:249311},
+  {raid:"FLECHE DU VIDE",boss:"LIGHTBLINDED VANGUARD",order:5,name:"Lien de Lumière",slot:"Bague",type:"Bague",stat1:"Maitrise",stat2:"Hate",link:"https://www.wowhead.com/fr/item=249369/bond-of-light?bonus=12787",id:249369},
+  {raid:"FLECHE DU VIDE",boss:"LIGHTBLINDED VANGUARD",order:5,name:"Litanie de courroux lumaveuglé",slot:"Trinket",type:"Bijou",stat1:"Intel",stat2:"Intel",link:"https://www.wowhead.com/fr/item=249808/litany-of-lightblind-wrath?bonus=12787",id:249808},
+  {raid:"FLECHE DU VIDE",boss:"LIGHTBLINDED VANGUARD",order:5,name:"Cœur-de-néant fanatique forgé dans le Vide",slot:"Token",type:"Plaque",stat1:"",stat2:"",link:"https://www.wowhead.com/fr/item=249358",id:249358},
+  {raid:"FLECHE DU VIDE",boss:"LIGHTBLINDED VANGUARD",order:5,name:"Cœur-de-néant fanatique moulé de Vide",slot:"Token",type:"Maille",stat1:"",stat2:"",link:"https://www.wowhead.com/fr/item=249357",id:249357},
+  {raid:"FLECHE DU VIDE",boss:"LIGHTBLINDED VANGUARD",order:5,name:"Cœur-de-néant fanatique tanné par le Vide",slot:"Token",type:"Cuir",stat1:"",stat2:"",link:"https://www.wowhead.com/fr/item=249356",id:249356},
+  {raid:"FLECHE DU VIDE",boss:"LIGHTBLINDED VANGUARD",order:5,name:"Cœur-de-néant fanatique tissé de Vide",slot:"Token",type:"Tissu",stat1:"",stat2:"",link:"https://www.wowhead.com/fr/item=249355",id:249355},
+  {raid:"FLECHE DU VIDE",boss:"CROWN OF THE COSMOS",order:6,name:"Souvenir fugace d'Arator",slot:"Agi 1M Epée",type:"Arme",stat1:"Crit",stat2:"Hate",link:"https://www.wowhead.com/fr/item=260423/arators-swift-remembrance?bonus=12788",id:260423},
+  {raid:"FLECHE DU VIDE",boss:"CROWN OF THE COSMOS",order:6,name:"Faux écho de Turalyon",slot:"Force 1M Masse",type:"Arme",stat1:"Hate",stat2:"Crit",link:"https://www.wowhead.com/fr/item=249295/turalyons-false-echo?bonus=12788",id:249295},
+  {raid:"FLECHE DU VIDE",boss:"CROWN OF THE COSMOS",order:6,name:"Arc à double courbure létal",slot:"Arc",type:"Arme",stat1:"Crit",stat2:"Hate",link:"https://www.wowhead.com/fr/item=249288/ranger-captains-lethal-recurve?bonus=12788",id:249288},
+  {raid:"FLECHE DU VIDE",boss:"CROWN OF THE COSMOS",order:6,name:"Regard de la déchaînée",slot:"Tête",type:"Tissu",stat1:"Maitrise",stat2:"Hate",link:"https://www.wowhead.com/fr/item=249329/gaze-of-the-unrestrained?bonus=12788",id:249329},
+  {raid:"FLECHE DU VIDE",boss:"CROWN OF THE COSMOS",order:6,name:"Culotte de lamenuit",slot:"Jambe",type:"Cuir",stat1:"Hate",stat2:"Hate",link:"https://www.wowhead.com/fr/item=249312/nightblades-pantaloons?bonus=12788",id:249312},
+  {raid:"FLECHE DU VIDE",boss:"CROWN OF THE COSMOS",order:6,name:"Bottillons de marche-canopée",slot:"Pied",type:"Cuir",stat1:"Maitrise",stat2:"Crit",link:"https://www.wowhead.com/fr/item=249382/canopy-walkers-footwraps?bonus=12788",id:249382},
+  {raid:"FLECHE DU VIDE",boss:"CROWN OF THE COSMOS",order:6,name:"Poignes de la berserker détachée",slot:"Hands",type:"Maille",stat1:"Maitrise",stat2:"Crit",link:"https://www.wowhead.com/fr/item=249325/untethered-berserkers-grips?bonus=12788",id:249325},
+  {raid:"FLECHE DU VIDE",boss:"CROWN OF THE COSMOS",order:6,name:"Cuirasse liée par le soleil",slot:"Torse",type:"Plaque",stat1:"Hate",stat2:"Crit",link:"https://www.wowhead.com/fr/item=249309/sunbound-breastplate?bonus=12788",id:249309},
+  {raid:"FLECHE DU VIDE",boss:"CROWN OF THE COSMOS",order:6,name:"Sangle en anneaux liée par la haine",slot:"Taille",type:"Plaque",stat1:"Maitrise",stat2:"Crit",link:"https://www.wowhead.com/fr/item=249380/hate-tied-waistchain?bonus=12788",id:249380},
+  {raid:"FLECHE DU VIDE",boss:"CROWN OF THE COSMOS",order:6,name:"Chaîne éternelle de Chantevide",slot:"Cou",type:"Collier",stat1:"Hate",stat2:"Maitrise",link:"https://www.wowhead.com/fr/item=249368/eternal-voidsong-chain?bonus=12788",id:249368},
+  {raid:"FLECHE DU VIDE",boss:"CROWN OF THE COSMOS",order:6,name:"Ruban de l'Arpenteur des ombres",slot:"Trinket",type:"Bijou",stat1:"Maitrise",stat2:"",link:"https://www.wowhead.com/fr/item=249809/locus-walkers-ribbon?bonus=12788",id:249809},
+  {raid:"FLECHE DU VIDE",boss:"CROWN OF THE COSMOS",order:6,name:"Insigne iridescent de capitaine",slot:"Trinket",type:"Bijou",stat1:"Agi",stat2:"",link:"https://www.wowhead.com/fr/item=249345/ranger-captains-iridescent-insignia?bonus=12788",id:249345},
+  {raid:"FAILLE DU REVE",boss:"CHIMAERUS, THE UNDREAMT GOD",order:1,name:"Flèche rejetée d'Aln",slot:"Agi Baton",type:"Arme",stat1:"Hate",stat2:"Poly",link:"https://www.wowhead.com/fr/item=249278/alnscorned-spire?bonus=12786",id:249278},
+  {raid:"FAILLE DU REVE",boss:"CHIMAERUS, THE UNDREAMT GOD",order:1,name:"Tome de regret rejeté d'Aln",slot:"Intel Main gauche",type:"Arme",stat1:"Hate",stat2:"Maitrise",link:"https://www.wowhead.com/fr/item=249922/tome-of-alnscorned-regret?bonus=12786",id:249922},
+  {raid:"FAILLE DU REVE",boss:"CHIMAERUS, THE UNDREAMT GOD",order:1,name:"Cuissardes brûlées par le Rêve",slot:"Pied",type:"Tissu",stat1:"Maitrise",stat2:"Crit",link:"https://www.wowhead.com/fr/item=249373/dream-scorched-striders?bonus=12786",id:249373},
+  {raid:"FAILLE DU REVE",boss:"CHIMAERUS, THE UNDREAMT GOD",order:1,name:"Ceinture de Shul'ka marquée par le dédain",slot:"Taille",type:"Cuir",stat1:"Hate",stat2:"Crit",link:"https://www.wowhead.com/fr/item=249374/scorn-scarred-shulkas-belt?bonus=12786",id:249374},
+  {raid:"FAILLE DU REVE",boss:"CHIMAERUS, THE UNDREAMT GOD",order:1,name:"Sangle fléau-du-dédain",slot:"Taille",type:"Maille",stat1:"Hate",stat2:"Maitrise",link:"https://www.wowhead.com/fr/item=249371/scornbane-waistguard?bonus=12786",id:249371},
+  {raid:"FAILLE DU REVE",boss:"CHIMAERUS, THE UNDREAMT GOD",order:1,name:"Grèves de l'informe",slot:"Pied",type:"Plaque",stat1:"Crit",stat2:"Maitrise",link:"https://www.wowhead.com/fr/item=249381/greaves-of-the-unformed?bonus=12786",id:249381},
+  {raid:"FAILLE DU REVE",boss:"CHIMAERUS, THE UNDREAMT GOD",order:1,name:"Regard de prophète d'Aln",slot:"Trinket",type:"Bijou",stat1:"Maitrise",stat2:"",link:"https://www.wowhead.com/fr/item=249343/gaze-of-the-alnseer?bonus=12786",id:249343},
+  {raid:"FAILLE DU REVE",boss:"CHIMAERUS, THE UNDREAMT GOD",order:1,name:"Vestige suintant de la divinité ineffable",slot:"Trinket",type:"Bijou",stat1:"Agi",stat2:"Force",link:"https://www.wowhead.com/fr/item=249805/undreamt-gods-oozing-vestige?bonus=12786",id:249805},
+  {raid:"FAILLE DU REVE",boss:"CHIMAERUS, THE UNDREAMT GOD",order:1,name:"Fleur-de-faille forgée d'Aln",slot:"Token",type:"Plaque",stat1:"",stat2:"",link:"https://www.wowhead.com/fr/item=249350",id:249350},
+  {raid:"FAILLE DU REVE",boss:"CHIMAERUS, THE UNDREAMT GOD",order:1,name:"Fleur-de-faille moulée d'Aln",slot:"Token",type:"Maille",stat1:"",stat2:"",link:"https://www.wowhead.com/fr/item=249349",id:249349},
+  {raid:"FAILLE DU REVE",boss:"CHIMAERUS, THE UNDREAMT GOD",order:1,name:"Fleur-de-faille tannée d'Aln",slot:"Token",type:"Cuir",stat1:"",stat2:"",link:"https://www.wowhead.com/fr/item=249348",id:249348},
+  {raid:"FAILLE DU REVE",boss:"CHIMAERUS, THE UNDREAMT GOD",order:1,name:"Fleur-de-faille tissée d'Aln",slot:"Token",type:"Tissu",stat1:"",stat2:"",link:"https://www.wowhead.com/fr/item=249347",id:249347},
+  {raid:"MARCHE SUR QUEL'DANAS",boss:"BELO'REN, CHILD OF AL'AR",order:1,name:"Belo'melorn la Serre brisée",slot:"Intel Dague",type:"Arme",stat1:"Hate",stat2:"Maitrise",link:"https://www.wowhead.com/fr/item=249283/belorens-mystic-talon?bonus=12787",id:249283},
+  {raid:"MARCHE SUR QUEL'DANAS",boss:"BELO'REN, CHILD OF AL'AR",order:1,name:"Serre rapide de Belo'ren",slot:"Agi Dague",type:"Arme",stat1:"Crit",stat2:"Maitrise",link:"https://www.wowhead.com/fr/item=249284/belorens-swift-talon?bonus=12787",id:249284},
+  {raid:"MARCHE SUR QUEL'DANAS",boss:"BELO'REN, CHILD OF AL'AR",order:1,name:"Garde-aube thalassien",slot:"Bouclier",type:"Arme",stat1:"Poly",stat2:"Crit",link:"https://www.wowhead.com/fr/item=249921/thalassian-dawnguard?bonus=12787",id:249921},
+  {raid:"MARCHE SUR QUEL'DANAS",boss:"BELO'REN, CHILD OF AL'AR",order:1,name:"Mantelet du Vide résonnant",slot:"Epaule",type:"Tissu",stat1:"Hate",stat2:"Maitrise",link:"https://www.wowhead.com/fr/item=249328/echoing-void-mantle?bonus=12787",id:249328},
+  {raid:"MARCHE SUR QUEL'DANAS",boss:"BELO'REN, CHILD OF AL'AR",order:1,name:"Écharpe gravée de murmures",slot:"Taille",type:"Tissu",stat1:"Maitrise",stat2:"Hate",link:"https://www.wowhead.com/fr/item=249376/whisper-inscribed-sash?bonus=12787",id:249376},
+  {raid:"MARCHE SUR QUEL'DANAS",boss:"BELO'REN, CHILD OF AL'AR",order:1,name:"Pourpoint soigne-étreinte radieux",slot:"Torse",type:"Cuir",stat1:"Crit",stat2:"Maitrise",link:"https://www.wowhead.com/fr/item=249322/radiant-clutchtenders-jerkin?bonus=12787",id:249322},
+  {raid:"MARCHE SUR QUEL'DANAS",boss:"BELO'REN, CHILD OF AL'AR",order:1,name:"Gardécaille de la flamme éternelle",slot:"Jambe",type:"Maille",stat1:"Maitrise",stat2:"Hate",link:"https://www.wowhead.com/fr/item=249324/eternal-flame-scaleguards?bonus=12787",id:249324},
+  {raid:"MARCHE SUR QUEL'DANAS",boss:"BELO'REN, CHILD OF AL'AR",order:1,name:"Bottines marchobscure",slot:"Pied",type:"Maille",stat1:"Crit",stat2:"Hate",link:"https://www.wowhead.com/fr/item=249377/darkstrider-treads?bonus=12787",id:249377},
+  {raid:"MARCHE SUR QUEL'DANAS",boss:"BELO'REN, CHILD OF AL'AR",order:1,name:"Poignées nées des braises",slot:"Hands",type:"Plaque",stat1:"Crit",stat2:"Poly",link:"https://www.wowhead.com/fr/item=249307/emberborn-grasps?bonus=12787",id:249307},
+  {raid:"MARCHE SUR QUEL'DANAS",boss:"BELO'REN, CHILD OF AL'AR",order:1,name:"Bague d'espoir sin'dorei",slot:"Bague",type:"Bague",stat1:"Crit",stat2:"Maitrise",link:"https://www.wowhead.com/fr/item=249919/sindorei-band-of-hope?bonus=12787",id:249919},
+  {raid:"MARCHE SUR QUEL'DANAS",boss:"BELO'REN, CHILD OF AL'AR",order:1,name:"Plume rayonnante",slot:"Trinket",type:"Bijou",stat1:"Agi",stat2:"Force",link:"https://www.wowhead.com/fr/item=249806/radiant-plume?bonus=12787",id:249806},
+  {raid:"MARCHE SUR QUEL'DANAS",boss:"BELO'REN, CHILD OF AL'AR",order:1,name:"L'œuf éternel",slot:"Trinket",type:"Bijou",stat1:"Agi",stat2:"Force",link:"https://www.wowhead.com/fr/item=249807/the-eternal-egg?bonus=12787",id:249807},
+  {raid:"MARCHE SUR QUEL'DANAS",boss:"Midnight Falls (L'ura)",order:2,name:"Alah'endal, la chantelaube",slot:"Force 2M Hache",type:"Arme",stat1:"Hate",stat2:"",link:"https://www.wowhead.com/fr/item=249296/alahendal-the-dawnsong?bonus=12788",id:249296},
+  {raid:"MARCHE SUR QUEL'DANAS",boss:"Midnight Falls (L'ura)",order:2,name:"Brasero de la complainte dissonante",slot:"Intel Baton",type:"Arme",stat1:"Maitrise",stat2:"",link:"https://www.wowhead.com/fr/item=249286/brazier-of-the-dissonant-dirge?bonus=12788",id:249286},
+  {raid:"MARCHE SUR QUEL'DANAS",boss:"Midnight Falls (L'ura)",order:2,name:"Lamentation enténébrée",slot:"Glaive de guerre",type:"Arme",stat1:"Crit",stat2:"",link:"https://www.wowhead.com/fr/item=260408/lightless-lament?bonus=12788",id:260408},
+  {raid:"MARCHE SUR QUEL'DANAS",boss:"Midnight Falls (L'ura)",order:2,name:"Robe de l'oubli infini",slot:"Torse",type:"Tissu",stat1:"Hate",stat2:"",link:"https://www.wowhead.com/fr/item=249912/robes-of-endless-oblivion?bonus=12788",id:249912},
+  {raid:"MARCHE SUR QUEL'DANAS",boss:"Midnight Falls (L'ura)",order:2,name:"Masque de l'intention la plus sombre",slot:"Tête",type:"Cuir",stat1:"Hate",stat2:"",link:"https://www.wowhead.com/fr/item=249913/mask-of-darkest-intent?bonus=12788",id:249913},
+  {raid:"MARCHE SUR QUEL'DANAS",boss:"Midnight Falls (L'ura)",order:2,name:"Semblance de l'oubli",slot:"Tête",type:"Maille",stat1:"Crit",stat2:"",link:"https://www.wowhead.com/fr/item=249914/oblivion-guise?bonus=12788",id:249914},
+  {raid:"MARCHE SUR QUEL'DANAS",boss:"Midnight Falls (L'ura)",order:2,name:"Garde-jambes d'extinction",slot:"Jambe",type:"Plaque",stat1:"Maitrise",stat2:"",link:"https://www.wowhead.com/fr/item=249915/extinction-guards?bonus=12788",id:249915},
+  {raid:"MARCHE SUR QUEL'DANAS",boss:"Midnight Falls (L'ura)",order:2,name:"Œil de minuit",slot:"Bague",type:"Bague",stat1:"Hate",stat2:"",link:"https://www.wowhead.com/fr/item=249920/eye-of-midnight?bonus=12788",id:249920},
+  {raid:"MARCHE SUR QUEL'DANAS",boss:"Midnight Falls (L'ura)",order:2,name:"Amulette de l'hymne abyssal",slot:"Cou",type:"Collier",stat1:"Maitrise",stat2:"Hate",link:"https://www.wowhead.com/fr/item=250247/amulet-of-the-abyssal-hymn?bonus=12788",id:250247},
+  {raid:"MARCHE SUR QUEL'DANAS",boss:"Midnight Falls (L'ura)",order:2,name:"Lumière du crescendo cosmique",slot:"Trinket",type:"Bijou",stat1:"Intel",stat2:"",link:"https://www.wowhead.com/fr/item=249811/light-of-the-cosmic-crescendo?bonus=12788",id:249811},
+  {raid:"MARCHE SUR QUEL'DANAS",boss:"Midnight Falls (L'ura)",order:2,name:"Ombre du requiem empyréen",slot:"Trinket",type:"Bijou",stat1:"Intel",stat2:"",link:"https://www.wowhead.com/fr/item=249810/shadow-of-the-empyrean-requiem?bonus=12788",id:249810},
+  {raid:"MARCHE SUR QUEL'DANAS",boss:"Midnight Falls (L'ura)",order:2,name:"Bibelot du Vide carillonnant",slot:"Trinket",type:"Bijou",stat1:"Intel",stat2:"",link:"https://www.wowhead.com/fr/item=249367",id:249367},
+];
+
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+const STORAGE_KEY = 'hadronloot_reservations_v1';
+const LOCK_KEY = 'hadronloot_lock_v1';
+const PLAYER_KEY = 'hadronloot_player_v1';
+const RL_KEY = 'hadronloot_rl_v1';
+
+let state = {
+  currentPlayer: localStorage.getItem(PLAYER_KEY) || '',
+  isRL: localStorage.getItem(RL_KEY) === '1',
+  reservations: {},  // { itemId: [playerName, ...] }
+  lock: null,        // { timestamp, snapshot: { itemId: [players] } } or null
+  filters: { raid: '', type: '', slot: '', search: '', mine: false }
+};
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) state.reservations = JSON.parse(raw);
+  } catch(e) {}
+  try {
+    const raw = localStorage.getItem(LOCK_KEY);
+    if (raw) state.lock = JSON.parse(raw);
+  } catch(e) {}
+}
+
+function saveReservations() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state.reservations));
+}
+
+function saveLock() {
+  if (state.lock) localStorage.setItem(LOCK_KEY, JSON.stringify(state.lock));
+  else localStorage.removeItem(LOCK_KEY);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════
+function getMyReservations() {
+  if (!state.currentPlayer) return [];
+  const me = state.currentPlayer;
+  const result = [];
+  for (const [idStr, players] of Object.entries(state.reservations)) {
+    if (players.includes(me)) {
+      const id = parseInt(idStr);
+      const item = LOOT_DATA.find(x => x.id === id);
+      if (item) result.push({ item, itemId: id });
+    }
+  }
+  return result;
+}
+
+function canReserve() {
+  return state.currentPlayer && getMyReservations().length < 2;
+}
+
+function hasReserved(itemId) {
+  const players = state.reservations[itemId] || [];
+  return state.currentPlayer && players.includes(state.currentPlayer);
+}
+
+function raidBadgeClass(raid) {
+  if (raid.includes('VIDE')) return 'raid-void';
+  if (raid.includes('REVE')) return 'raid-dream';
+  return 'raid-qd';
+}
+
+function raidLabel(raid) {
+  if (raid.includes('VIDE')) return 'Flèche du Vide';
+  if (raid.includes('REVE')) return 'Faille du Rêve';
+  return "Marche sur Quel'Danas";
+}
+
+function typeClass(type) {
+  const map = {
+    'Arme':'arme','Tissu':'tissu','Cuir':'cuir','Maille':'maille','Plaque':'plaque',
+    'Bijou':'bijou','Bague':'bague','Collier':'collier','Cape':'cape','Token':'token'
+  };
+  return 'type-' + (map[type] || 'bijou');
+}
+
+function toast(msg, type='ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast toast-' + type + ' visible';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('visible'), 3000);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════════
+function renderResaSummary() {
+  const myResas = getMyReservations();
+  const el = document.getElementById('resa-summary');
+  let html = '';
+  for (let i = 0; i < 2; i++) {
+    const r = myResas[i];
+    if (r) {
+      html += `<div class="resa-slot">
+        <span class="resa-num">${i+1}</span>
+        <div class="resa-info">
+          <div class="resa-name">${r.item.name}</div>
+          <div class="resa-boss">${r.item.boss} · ${raidLabel(r.item.raid)}</div>
+        </div>
+        <button class="resa-remove" title="Supprimer" onclick="removeReservation(${r.itemId})">✕</button>
+      </div>`;
+    } else {
+      html += `<div class="resa-slot">
+        <span class="resa-num">${i+1}</span>
+        <div class="resa-info"><div class="resa-empty">— aucune —</div></div>
+      </div>`;
+    }
+  }
+  el.innerHTML = html;
+}
+
+function getFilteredItems() {
+  const f = state.filters;
+  return LOOT_DATA.filter(item => {
+    if (f.raid && item.raid !== f.raid) return false;
+    if (f.type && item.type !== f.type) return false;
+    if (f.slot && item.slot !== f.slot) return false;
+    if (f.search) {
+      const q = f.search.toLowerCase();
+      if (!item.name.toLowerCase().includes(q) && !item.boss.toLowerCase().includes(q) && !item.slot.toLowerCase().includes(q)) return false;
+    }
+    if (f.mine && !hasReserved(item.id)) return false;
+    return true;
+  });
+}
+
+function renderItems() {
+  const container = document.getElementById('items-container');
+  const filtered = getFilteredItems();
+
+  // Group by raid then boss
+  const groups = {};
+  const groupOrder = [];
+  for (const item of filtered) {
+    const key = item.raid + '|||' + item.boss;
+    if (!groups[key]) {
+      groups[key] = { raid: item.raid, boss: item.boss, order: item.order, items: [] };
+      groupOrder.push(key);
+    }
+    groups[key].items.push(item);
+  }
+  // Sort by raid then boss order
+  groupOrder.sort((a, b) => {
+    const ga = groups[a], gb = groups[b];
+    const raidOrd = { 'FLECHE DU VIDE': 0, 'FAILLE DU REVE': 1, "MARCHE SUR QUEL'DANAS": 2 };
+    const ra = raidOrd[ga.raid] ?? 9, rb = raidOrd[gb.raid] ?? 9;
+    if (ra !== rb) return ra - rb;
+    return ga.order - gb.order;
+  });
+
+  if (groupOrder.length === 0) {
+    container.innerHTML = '<div class="no-results">Aucun objet ne correspond aux filtres.</div>';
+    return;
+  }
+
+  let html = '';
+  for (const key of groupOrder) {
+    const g = groups[key];
+    html += `<div class="boss-section">
+      <div class="boss-header">
+        <span class="raid-badge ${raidBadgeClass(g.raid)}">${raidLabel(g.raid)}</span>
+        <span class="boss-name">${g.boss}</span>
+        <span class="boss-count">${g.items.length} objet${g.items.length>1?'s':''}</span>
+      </div>
+      <div class="items-grid">`;
+    for (const item of g.items) {
+      html += renderItemCard(item);
+    }
+    html += `</div></div>`;
+  }
+  container.innerHTML = html;
+}
+
+function renderItemCard(item) {
+  const players = state.reservations[item.id] || [];
+  const me = hasReserved(item.id);
+  const locked = !!state.lock;
+
+  let cardClass = 'item-card';
+  if (me) cardClass += ' reserved-by-me';
+
+  const stats = [item.stat1, item.stat2].filter(Boolean);
+
+  let reservantsHtml = '';
+  if (players.length > 0) {
+    reservantsHtml = players.map(p =>
+      `<span class="reservant-chip${p === state.currentPlayer ? ' me' : ''}">${p}</span>`
+    ).join('');
+  }
+
+  let btnHtml = '';
+  if (state.currentPlayer) {
+    if (me) {
+      if (!locked) {
+        btnHtml = `<button class="reserve-btn remove" onclick="removeReservation(${item.id})">Annuler</button>`;
+      } else {
+        btnHtml = `<button class="reserve-btn remove" onclick="removeReservation(${item.id})" title="Les réservations sont verrouillées mais vous pouvez quand même modifier">Annuler*</button>`;
+      }
+    } else {
+      const full = getMyReservations().length >= 2;
+      btnHtml = `<button class="reserve-btn" onclick="addReservation(${item.id})" ${full ? 'disabled title="2 réservations max"' : ''}>Réserver</button>`;
+    }
+  }
+
+  return `<div class="${cardClass}" id="card-${item.id}">
+    <div class="item-top">
+      <span class="item-slot-badge">${item.slot}</span>
+      <span class="item-name">${item.name}</span>
+    </div>
+    <div class="item-meta">
+      <span class="type-badge ${typeClass(item.type)}">${item.type}</span>
+      ${stats.map(s => `<span class="stat-tag">${s}</span>`).join('')}
+    </div>
+    <div class="item-footer">
+      <div class="reservants">${reservantsHtml || '<span style="font-size:0.72rem;color:var(--text-muted);font-style:italic;">aucune réservation</span>'}</div>
+      <div style="display:flex;align-items:center;gap:4px;">
+        ${btnHtml}
+        <a class="wowhead-link" href="${item.link}" target="_blank" title="Voir sur Wowhead">WH↗</a>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderLockBanner() {
+  const banner = document.getElementById('lock-banner');
+  const unlockBtn = document.getElementById('btn-unlock');
+  if (state.lock) {
+    banner.classList.remove('hidden');
+    const d = new Date(state.lock.timestamp);
+    document.getElementById('lock-date-label').textContent = `Verrouillé le ${d.toLocaleDateString('fr-BE')} à ${d.toLocaleTimeString('fr-BE', {hour:'2-digit',minute:'2-digit'})} — les modifications ne sont pas exportées`;
+    if (state.isRL) unlockBtn.classList.remove('hidden');
+    else unlockBtn.classList.add('hidden');
+  } else {
+    banner.classList.add('hidden');
+  }
+}
+
+function render() {
+  renderResaSummary();
+  renderItems();
+  renderLockBanner();
+  renderSlotFilter();
+
+  // Player display
+  if (state.currentPlayer) {
+    document.getElementById('player-name-input').closest('div').previousElementSibling.nextElementSibling.style.display = '';
+    document.getElementById('current-player-display').classList.remove('hidden');
+    document.getElementById('current-player-name').textContent = state.currentPlayer;
+    document.getElementById('player-name-input').closest('.login-block').classList.add('hidden');
+  } else {
+    document.getElementById('current-player-display').classList.add('hidden');
+    document.getElementById('player-name-input').closest('.login-block').classList.remove('hidden');
+  }
+
+  // RL panel
+  const rlPanel = document.getElementById('rl-panel');
+  if (state.isRL) {
+    rlPanel.classList.remove('hidden');
+    document.getElementById('btn-rl-toggle').textContent = 'Désactiver RL';
+  } else {
+    rlPanel.classList.add('hidden');
+    document.getElementById('btn-rl-toggle').textContent = 'Mode RL';
+  }
+}
+
+function renderSlotFilter() {
+  const slots = [...new Set(LOOT_DATA.map(x => x.slot))].sort();
+  const sel = document.getElementById('filter-slot');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Tous les emplacements</option>' +
+    slots.map(s => `<option value="${s}" ${s===cur?'selected':''}>${s}</option>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ACTIONS
+// ═══════════════════════════════════════════════════════════════
+function addReservation(itemId) {
+  if (!state.currentPlayer) { toast('Entre ton pseudo d\'abord !', 'err'); return; }
+  const me = state.currentPlayer;
+  const myResas = getMyReservations();
+  if (myResas.length >= 2) { toast('Tu as déjà 2 réservations (maximum).', 'err'); return; }
+  if (!state.reservations[itemId]) state.reservations[itemId] = [];
+  if (state.reservations[itemId].includes(me)) { toast('Tu as déjà réservé cet objet.', 'err'); return; }
+  state.reservations[itemId].push(me);
+  saveReservations();
+  render();
+  toast('Réservation enregistrée !', 'ok');
+}
+
+function removeReservation(itemId) {
+  const me = state.currentPlayer;
+  if (!me) return;
+  if (!state.reservations[itemId]) return;
+  state.reservations[itemId] = state.reservations[itemId].filter(p => p !== me);
+  if (state.reservations[itemId].length === 0) delete state.reservations[itemId];
+  saveReservations();
+  render();
+  toast('Réservation annulée.', 'ok');
+}
+
+window.addReservation = addReservation;
+window.removeReservation = removeReservation;
+
+// ─── CSV Export ───
+function buildCSV(source) {
+  // Format: Pseudo IG,RAID,BOSS,OBJET CHOISIT,EMPLACEMENT
+  const lines = ['Pseudo IG,RAID,BOSS,OBJET CHOISIT,EMPLACEMENT'];
+  for (const [idStr, players] of Object.entries(source)) {
+    const id = parseInt(idStr);
+    const item = LOOT_DATA.find(x => x.id === id);
+    if (!item) continue;
+    for (const player of players) {
+      const objField = `${item.name} - ${item.link}`;
+      // CSV escape
+      const esc = s => s.includes(',') || s.includes('"') ? `"${s.replace(/"/g,'""')}"` : s;
+      lines.push([player, item.raid, item.boss, esc(objField), item.slot].join(','));
+    }
+  }
+  return lines.join('\n');
+}
+
+// ─── PLAYER ───
+document.getElementById('btn-confirm-player').addEventListener('click', () => {
+  const val = document.getElementById('player-name-input').value.trim();
+  if (!val) { toast('Entre un pseudo valide.', 'err'); return; }
+  state.currentPlayer = val;
+  localStorage.setItem(PLAYER_KEY, val);
+  render();
+  toast(`Bienvenue, ${val} !`, 'ok');
+});
+
+document.getElementById('player-name-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('btn-confirm-player').click();
+});
+
+document.getElementById('btn-change-player').addEventListener('click', () => {
+  state.currentPlayer = '';
+  localStorage.removeItem(PLAYER_KEY);
+  render();
+});
+
+// ─── RL TOGGLE ───
+document.getElementById('btn-rl-toggle').addEventListener('click', () => {
+  if (!state.isRL) {
+    const pw = prompt('Mot de passe Raid Leader :');
+    if (pw !== 'hadronRL2025') { toast('Mot de passe incorrect.', 'err'); return; }
+    state.isRL = true;
+    localStorage.setItem(RL_KEY, '1');
+  } else {
+    state.isRL = false;
+    localStorage.removeItem(RL_KEY);
+  }
+  render();
+});
+
+// ─── LOCK ───
+document.getElementById('btn-lock').addEventListener('click', () => {
+  if (state.lock) { toast('Déjà verrouillé. Déverrouillez d\'abord.', 'err'); return; }
+  if (!confirm('Verrouiller les réservations actuelles ? Les joueurs pourront encore modifier, mais l\'export reflètera cet état.')) return;
+  state.lock = {
+    timestamp: new Date().toISOString(),
+    snapshot: JSON.parse(JSON.stringify(state.reservations))
+  };
+  saveLock();
+  render();
+  toast('Réservations verrouillées !', 'ok');
+});
+
+document.getElementById('btn-unlock').addEventListener('click', () => {
+  if (!confirm('Déverrouiller ? Le prochain verrouillage créera un nouvel export.')) return;
+  state.lock = null;
+  saveLock();
+  render();
+  toast('Déverrouillé.', 'ok');
+});
+
+// ─── EXPORT ───
+document.getElementById('btn-export').addEventListener('click', () => {
+  const source = state.lock ? state.lock.snapshot : state.reservations;
+  const csv = buildCSV(source);
+  document.getElementById('export-textarea').value = csv;
+  const label = state.lock
+    ? `Snapshot verrouillé le ${new Date(state.lock.timestamp).toLocaleString('fr-BE')} — ${Object.values(source).reduce((a,b)=>a+b.length,0)} réservation(s).`
+    : `Données en direct (non verrouillées) — ${Object.values(source).reduce((a,b)=>a+b.length,0)} réservation(s).`;
+  document.getElementById('export-source-label').textContent = label;
+  document.getElementById('export-modal').classList.add('open');
+});
+
+document.getElementById('btn-copy-csv').addEventListener('click', () => {
+  const ta = document.getElementById('export-textarea');
+  navigator.clipboard.writeText(ta.value).then(() => toast('Copié dans le presse-papier !', 'ok'));
+});
+
+document.getElementById('close-export-modal').addEventListener('click', () =>
+  document.getElementById('export-modal').classList.remove('open'));
+document.getElementById('btn-close-export').addEventListener('click', () =>
+  document.getElementById('export-modal').classList.remove('open'));
+document.getElementById('export-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
+});
+
+// ─── CLEAR ALL ───
+document.getElementById('btn-clear-all').addEventListener('click', () => {
+  if (!confirm('Vider TOUTES les réservations de tous les joueurs ? Cette action est irréversible.')) return;
+  state.reservations = {};
+  state.lock = null;
+  saveReservations();
+  saveLock();
+  render();
+  toast('Toutes les réservations ont été supprimées.', 'ok');
+});
+
+// ─── FILTERS ───
+document.getElementById('filter-raid').addEventListener('change', e => {
+  state.filters.raid = e.target.value;
+  renderItems();
+});
+document.getElementById('filter-type').addEventListener('change', e => {
+  state.filters.type = e.target.value;
+  renderItems();
+});
+document.getElementById('filter-slot').addEventListener('change', e => {
+  state.filters.slot = e.target.value;
+  renderItems();
+});
+document.getElementById('search-input').addEventListener('input', e => {
+  state.filters.search = e.target.value;
+  renderItems();
+});
+document.getElementById('filter-mine').addEventListener('change', e => {
+  state.filters.mine = e.target.checked;
+  renderItems();
+});
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+loadState();
+render();
+</script>
+</body>
+</html>
