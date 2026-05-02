@@ -6,6 +6,8 @@
 <title>HadronLoot — Réservations Midnight</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+<script>const whTooltips = {colorLinks: true, iconizeLinks: true, renameLinks: false};</script>
+<script src="https://wow.zamimg.com/js/tooltips.js"></script>
 <style>
 :root {
     --gold: #c9a227;
@@ -276,27 +278,69 @@
     gap: 10px;
   }
 
+  /* ── Item card — clickable whole surface ── */
   .item-card {
     background: var(--surface);
     border: 0.5px solid var(--border);
     border-radius: 4px;
     padding: 12px 14px;
-    transition: border-color 0.18s, background 0.18s;
+    transition: border-color 0.18s, background 0.18s, transform 0.12s;
     cursor: pointer;
     position: relative;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
   }
-  .item-card:hover { border-color: var(--border-hover); background: var(--surface-2); }
-  .item-card.selected {
-    border-color: var(--gold);
-    background: rgba(201,162,39,0.07);
-  }
+  .item-card:hover  { border-color: var(--border-hover); background: var(--surface-2); }
+  .item-card:active { transform: scale(0.985); }
+
+  /* State: already reserved by me */
   .item-card.reserved-by-me {
-    border-color: rgba(61,179,124,0.5);
+    border-color: rgba(61,179,124,0.55);
     background: rgba(61,179,124,0.05);
   }
-  .item-card.reserved-by-me:hover { border-color: rgba(61,179,124,0.8); }
+  .item-card.reserved-by-me:hover { border-color: rgba(61,179,124,0.85); }
 
-  .item-top { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+  /* State: full (can't add more) */
+  .item-card.full-slots:not(.reserved-by-me) {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+  .item-card.full-slots:not(.reserved-by-me):active { transform: none; }
+
+  /* State: no player identified */
+  .item-card.no-player { cursor: default; }
+  .item-card.no-player:hover { border-color: var(--border); background: var(--surface); }
+  .item-card.no-player:active { transform: none; }
+
+  /* Click ripple indicator in top-right */
+  .card-action-hint {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    font-size: 0.6rem;
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.07em;
+    padding: 2px 8px;
+    border-radius: 2px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+  }
+  .item-card:hover .card-action-hint { opacity: 1; }
+  .item-card.reserved-by-me .card-action-hint {
+    color: var(--red-light);
+    background: rgba(201,64,64,0.1);
+    border: 0.5px solid rgba(201,64,64,0.25);
+  }
+  .item-card:not(.reserved-by-me):not(.full-slots):not(.no-player) .card-action-hint {
+    color: var(--gold-light);
+    background: rgba(201,162,39,0.1);
+    border: 0.5px solid rgba(201,162,39,0.25);
+  }
+  .item-card.full-slots:not(.reserved-by-me) .card-action-hint { display: none; }
+  .item-card.no-player .card-action-hint { display: none; }
+
+  .item-top { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; padding-right: 80px; }
   .item-slot-badge {
     font-size: 0.62rem;
     padding: 2px 7px;
@@ -317,6 +361,16 @@
     line-height: 1.3;
     flex: 1;
   }
+  /* Wowhead tooltip trigger on name */
+  .item-name-link {
+    color: inherit;
+    text-decoration: none;
+    cursor: help;
+    border-bottom: 0.5px dashed rgba(201,162,39,0.35);
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .item-name-link:hover { color: var(--gold-light); border-bottom-color: var(--gold); }
+
   .item-meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
   .type-badge {
     font-size: 0.7rem;
@@ -335,7 +389,7 @@
   .type-token { background: rgba(155,111,212,0.15); color: #c0a0e8; border: 0.5px solid rgba(155,111,212,0.3); }
   .stat-tag { font-size: 0.68rem; color: var(--text-muted); padding: 2px 6px; background: var(--void-4); border-radius: 2px; }
 
-  .item-footer { display: flex; align-items: center; justify-content: space-between; }
+  .item-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
   .reservants {
     display: flex;
     flex-wrap: wrap;
@@ -356,35 +410,25 @@
     border-color: rgba(61,179,124,0.3);
     font-weight: 600;
   }
-  .reserve-btn {
-    font-family: 'Cinzel', serif;
-    font-size: 0.62rem;
-    letter-spacing: 0.08em;
-    padding: 5px 12px;
-    border-radius: 2px;
-    border: 0.5px solid var(--border);
-    cursor: pointer;
-    background: transparent;
-    color: var(--text-dim);
-    transition: all 0.15s;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-  .reserve-btn:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); background: rgba(201,162,39,0.08); }
-  .reserve-btn.remove { border-color: rgba(201,64,64,0.3); color: var(--red-light); }
-  .reserve-btn.remove:hover:not(:disabled) { background: rgba(201,64,64,0.12); }
-  .reserve-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
+  /* "Voir Détail" link replacing old WH button */
   .wowhead-link {
-    font-size: 0.68rem;
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.07em;
     color: var(--text-muted);
     text-decoration: none;
-    margin-left: 8px;
     flex-shrink: 0;
-    opacity: 0.6;
-    transition: opacity 0.15s;
+    border: 0.5px solid var(--border);
+    border-radius: 2px;
+    padding: 4px 10px;
+    transition: all 0.15s;
+    white-space: nowrap;
+    /* Intercept clicks so card click doesn't fire */
+    position: relative;
+    z-index: 2;
   }
-  .wowhead-link:hover { opacity: 1; color: var(--gold-light); }
+  .wowhead-link:hover { color: var(--gold-light); border-color: rgba(201,162,39,0.4); background: rgba(201,162,39,0.06); }
 
   /* ─── RL PANEL ─── */
   .rl-panel {
@@ -518,6 +562,130 @@
 
   .hidden { display: none !important; }
   .no-results { color: var(--text-muted); font-style: italic; font-size: 0.9rem; padding: 1rem 0; }
+
+  /* ─── MOBILE BOTTOM NAV ─── */
+  .mobile-nav {
+    display: none;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(10,8,18,0.97);
+    backdrop-filter: blur(10px);
+    border-top: 0.5px solid var(--border);
+    padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+    z-index: 150;
+    justify-content: space-around;
+  }
+  .mobile-nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.6rem;
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    padding: 4px 12px;
+    border-radius: 6px;
+    transition: color 0.15s;
+    min-width: 60px;
+  }
+  .mobile-nav-btn .nav-icon { font-size: 1.3rem; line-height: 1; }
+  .mobile-nav-btn.active { color: var(--gold); }
+  .mobile-nav-btn:hover { color: var(--text); }
+
+  /* Mobile drawer — slides up over content */
+  .mobile-drawer {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 140;
+    pointer-events: none;
+  }
+  .mobile-drawer-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    opacity: 0;
+    transition: opacity 0.25s;
+    pointer-events: none;
+  }
+  .mobile-drawer-panel {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: var(--void-2);
+    border-top: 0.5px solid var(--border-hover);
+    border-radius: 14px 14px 0 0;
+    padding: 1.25rem 1.25rem max(1.5rem, env(safe-area-inset-bottom));
+    transform: translateY(100%);
+    transition: transform 0.28s cubic-bezier(0.32,0.72,0,1);
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+  .mobile-drawer.open { pointer-events: auto; }
+  .mobile-drawer.open .mobile-drawer-backdrop { opacity: 1; pointer-events: auto; }
+  .mobile-drawer.open .mobile-drawer-panel { transform: translateY(0); }
+  .drawer-handle {
+    width: 36px; height: 4px;
+    background: var(--void-5);
+    border-radius: 2px;
+    margin: 0 auto 1.25rem;
+  }
+  .drawer-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  /* ─── RESPONSIVE BREAKPOINTS ─── */
+  @media (max-width: 768px) {
+    .site-header {
+      padding: 0.75rem 1rem;
+    }
+    .logo { font-size: 0.9rem; }
+    .logo span { display: none; }
+    .sync-bar { display: none; }
+    #btn-rl-toggle { display: none; }
+
+    .app-layout {
+      grid-template-columns: 1fr;
+      padding-bottom: 70px; /* space for bottom nav */
+    }
+    .sidebar { display: none; }  /* replaced by mobile drawer */
+    .main-content { padding: 1rem; }
+
+    .items-grid {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    .item-card { padding: 11px 12px; }
+    .item-top { padding-right: 70px; }
+    .card-action-hint { font-size: 0.55rem; padding: 2px 6px; }
+
+    .boss-header { gap: 8px; }
+    .boss-name { font-size: 0.85rem; }
+
+    .mobile-nav { display: flex; }
+    .mobile-drawer { display: block; }
+
+    /* RL panel on mobile */
+    .rl-panel { border-radius: 0; margin: -1rem -1rem 1rem; padding: 1rem; }
+    .rl-actions { flex-direction: column; }
+    .rl-actions .btn { width: 100%; text-align: center; }
+
+    /* Toast on mobile */
+    .toast { bottom: 80px; left: 1rem; right: 1rem; max-width: none; }
+  }
+
+  @media (max-width: 480px) {
+    .item-name { font-size: 0.9rem; }
+    .boss-section { margin-bottom: 2rem; }
+  }
 
   /* ─── SYNC STATUS ─── */
   .sync-dot {
@@ -690,9 +858,99 @@
     <div id="items-container"></div>
 
   </main>
-</div>
+</div><!-- /app-layout -->
 
-<!-- Export Modal -->
+<!-- ═══════ MOBILE BOTTOM NAV ═══════ -->
+<nav class="mobile-nav" id="mobile-nav">
+  <button class="mobile-nav-btn active" id="mnav-loots" onclick="mobileTab('loots')">
+    <span class="nav-icon">⚔️</span>Loots
+  </button>
+  <button class="mobile-nav-btn" id="mnav-myresas" onclick="mobileTab('myresas')">
+    <span class="nav-icon">📋</span>Mes résa
+  </button>
+  <button class="mobile-nav-btn" id="mnav-filtres" onclick="mobileTab('filtres')">
+    <span class="nav-icon">🔍</span>Filtres
+  </button>
+  <button class="mobile-nav-btn" id="mnav-profil" onclick="mobileTab('profil')">
+    <span class="nav-icon">👤</span>Profil
+  </button>
+</nav>
+
+<!-- Mobile Drawer (shared) -->
+<div class="mobile-drawer" id="mobile-drawer">
+  <div class="mobile-drawer-backdrop" id="drawer-backdrop"></div>
+  <div class="mobile-drawer-panel" id="drawer-panel">
+    <div class="drawer-handle"></div>
+
+    <!-- Profil panel -->
+    <div id="drawer-profil" class="hidden">
+      <div class="drawer-title">Mon profil</div>
+      <div class="login-block" id="mobile-login-block">
+        <input class="player-input" id="mobile-player-input" type="text" placeholder="Ex: Thrall" autocomplete="off" spellcheck="false" />
+        <button class="btn btn-gold" id="mobile-btn-confirm" style="width:100%;">Confirmer</button>
+      </div>
+      <div id="mobile-player-display" class="hidden" style="font-size:0.9rem;color:var(--text-dim);">
+        Connecté en tant que <strong id="mobile-player-name" style="color:var(--gold-light);"></strong>
+        <br><button class="btn btn-red" id="mobile-btn-change" style="font-size:0.6rem;padding:4px 10px;margin-top:10px;">Changer de pseudo</button>
+      </div>
+      <!-- Mobile RL access -->
+      <div style="margin-top:1.25rem;padding-top:1rem;border-top:0.5px solid var(--border);">
+        <div class="drawer-title" style="margin-bottom:0.75rem;">Mode Raid Leader</div>
+        <button class="btn" id="mobile-rl-toggle" style="width:100%;">Activer le mode RL</button>
+        <div id="mobile-rl-panel" class="hidden" style="margin-top:0.75rem;display:flex;flex-direction:column;gap:8px;">
+          <button class="btn btn-gold" id="mobile-btn-lock" style="width:100%;">🔒 Verrouiller</button>
+          <button class="btn" id="mobile-btn-export" style="width:100%;">📋 Exporter CSV</button>
+          <button class="btn btn-red" id="mobile-btn-clear" style="width:100%;">🗑 Vider toutes les résa</button>
+        </div>
+      </div>
+      <div style="margin-top:1rem;font-size:0.72rem;color:var(--text-muted);">Sync auto toutes les 20s. Données partagées.</div>
+    </div>
+
+    <!-- My reservations panel -->
+    <div id="drawer-myresas" class="hidden">
+      <div class="drawer-title">Mes réservations (max 2)</div>
+      <div class="resa-summary" id="mobile-resa-summary">
+        <div class="resa-slot"><span class="resa-num">1</span><div class="resa-info"><div class="resa-empty">— aucune —</div></div></div>
+        <div class="resa-slot"><span class="resa-num">2</span><div class="resa-info"><div class="resa-empty">— aucune —</div></div></div>
+      </div>
+    </div>
+
+    <!-- Filters panel -->
+    <div id="drawer-filtres" class="hidden">
+      <div class="drawer-title">Filtres</div>
+      <div class="filter-group">
+        <input class="search-input" id="mobile-search" type="text" placeholder="Chercher un objet…" autocomplete="off" />
+        <select class="filter-select" id="mobile-filter-raid">
+          <option value="">Tous les raids</option>
+          <option value="FLECHE DU VIDE">Flèche du Vide</option>
+          <option value="FAILLE DU REVE">Faille du Rêve</option>
+          <option value="MARCHE SUR QUEL'DANAS">Marche sur Quel'Danas</option>
+        </select>
+        <select class="filter-select" id="mobile-filter-type">
+          <option value="">Tous les types</option>
+          <option value="Arme">Arme</option>
+          <option value="Tissu">Tissu</option>
+          <option value="Cuir">Cuir</option>
+          <option value="Maille">Maille</option>
+          <option value="Plaque">Plaque</option>
+          <option value="Bijou">Bijou</option>
+          <option value="Bague">Bague</option>
+          <option value="Collier">Collier</option>
+          <option value="Cape">Cape</option>
+          <option value="Token">Token</option>
+        </select>
+        <select class="filter-select" id="mobile-filter-slot">
+          <option value="">Tous les emplacements</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:8px;font-size:0.88rem;color:var(--text-dim);cursor:pointer;padding:4px 0;">
+          <input type="checkbox" id="mobile-filter-mine" style="accent-color:var(--gold);width:18px;height:18px;" />
+          Mes réservations seulement
+        </label>
+        <button class="btn btn-gold" onclick="closeDrawer()" style="width:100%;margin-top:8px;">Appliquer</button>
+      </div>
+    </div>
+  </div>
+</div>
 <div class="modal-bg" id="export-modal">
   <div class="modal">
     <button class="modal-close" id="close-export-modal">✕</button>
@@ -1057,24 +1315,35 @@ function renderItemCard(item) {
   const players = state.reservations[item.id] || [];
   const me = hasReserved(item.id);
   const locked = !!state.lock;
-  let cardClass = 'item-card' + (me ? ' reserved-by-me' : '');
+  const noPlayer = !state.currentPlayer;
+  const full = getMyReservations().length >= 2;
+
+  let cardClass = 'item-card';
+  if (me) cardClass += ' reserved-by-me';
+  else if (noPlayer) cardClass += ' no-player';
+  else if (full) cardClass += ' full-slots';
+
   const stats = [item.stat1, item.stat2].filter(Boolean);
   const reservantsHtml = players.length > 0
     ? players.map(p => `<span class="reservant-chip${p === state.currentPlayer ? ' me' : ''}">${p}</span>`).join('')
     : '<span style="font-size:0.72rem;color:var(--text-muted);font-style:italic;">aucune réservation</span>';
-  let btnHtml = '';
-  if (state.currentPlayer) {
-    if (me) {
-      btnHtml = `<button class="reserve-btn remove" onclick="removeReservation(${item.id})">${locked ? 'Annuler*' : 'Annuler'}</button>`;
-    } else {
-      const full = getMyReservations().length >= 2;
-      btnHtml = `<button class="reserve-btn" onclick="addReservation(${item.id})" ${full ? 'disabled title="2 réservations max"' : ''}>Réserver</button>`;
-    }
-  }
-  return `<div class="${cardClass}" id="card-${item.id}">
+
+  // Wowhead tooltip: extract bonus from link
+  const bonusMatch = item.link.match(/[?&]bonus=([^&]+)/);
+  const bonusAttr = bonusMatch ? ` rel="bonus=${bonusMatch[1]}"` : '';
+
+  // Action hint text shown on hover
+  let hintText = '';
+  if (me) hintText = locked ? 'Annuler*' : 'Annuler ✕';
+  else if (!noPlayer && !full) hintText = 'Réserver ✓';
+
+  return `<div class="${cardClass}" id="card-${item.id}" onclick="handleCardClick(event,${item.id})">
+    <div class="card-action-hint">${hintText}</div>
     <div class="item-top">
       <span class="item-slot-badge">${item.slot}</span>
-      <span class="item-name">${item.name}</span>
+      <span class="item-name">
+        <a class="item-name-link" href="${item.link}"${bonusAttr} data-wowhead="item=${item.id}" data-game="wow" target="_blank" onclick="event.stopPropagation()">${item.name}</a>
+      </span>
     </div>
     <div class="item-meta">
       <span class="type-badge ${typeClass(item.type)}">${item.type}</span>
@@ -1082,10 +1351,7 @@ function renderItemCard(item) {
     </div>
     <div class="item-footer">
       <div class="reservants">${reservantsHtml}</div>
-      <div style="display:flex;align-items:center;gap:4px;">
-        ${btnHtml}
-        <a class="wowhead-link" href="${item.link}" target="_blank" title="Voir sur Wowhead">WH↗</a>
-      </div>
+      <a class="wowhead-link" href="${item.link}" target="_blank" onclick="event.stopPropagation()" title="Voir sur Wowhead">Voir Détail ↗</a>
     </div>
   </div>`;
 }
@@ -1186,6 +1452,174 @@ async function removeReservation(itemId) {
 
 window.addReservation = addReservation;
 window.removeReservation = removeReservation;
+
+// ─── CARD CLICK HANDLER ───
+function handleCardClick(event, itemId) {
+  // Don't fire if clicking a link or button inside card
+  if (event.target.closest('a') || event.target.closest('button')) return;
+  if (!state.currentPlayer) { toast('Entre ton pseudo pour réserver !', 'err'); return; }
+  if (hasReserved(itemId)) {
+    removeReservation(itemId);
+  } else {
+    addReservation(itemId);
+  }
+}
+window.handleCardClick = handleCardClick;
+
+// ─── MOBILE TABS & DRAWER ───
+let currentDrawerTab = null;
+
+function mobileTab(tab) {
+  // Update nav button states
+  document.querySelectorAll('.mobile-nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('mnav-' + tab)?.classList.add('active');
+
+  if (tab === 'loots') {
+    closeDrawer();
+    return;
+  }
+  // Show drawer with correct panel
+  ['profil','myresas','filtres'].forEach(t => {
+    document.getElementById('drawer-' + t)?.classList.add('hidden');
+  });
+  const panel = document.getElementById('drawer-' + tab);
+  if (panel) {
+    panel.classList.remove('hidden');
+    // Sync mobile resa summary when opening
+    if (tab === 'myresas') syncMobileResaSummary();
+    if (tab === 'filtres') syncMobileFilterSlots();
+  }
+  currentDrawerTab = tab;
+  document.getElementById('mobile-drawer').classList.add('open');
+}
+
+function closeDrawer() {
+  document.getElementById('mobile-drawer').classList.remove('open');
+  document.querySelectorAll('.mobile-nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('mnav-loots')?.classList.add('active');
+  currentDrawerTab = null;
+}
+window.closeDrawer = closeDrawer;
+window.mobileTab = mobileTab;
+
+document.getElementById('drawer-backdrop').addEventListener('click', closeDrawer);
+
+function syncMobileResaSummary() {
+  const myResas = getMyReservations();
+  const el = document.getElementById('mobile-resa-summary');
+  if (!el) return;
+  let html = '';
+  for (let i = 0; i < 2; i++) {
+    const r = myResas[i];
+    if (r) {
+      html += `<div class="resa-slot">
+        <span class="resa-num">${i+1}</span>
+        <div class="resa-info">
+          <div class="resa-name">${r.item.name}</div>
+          <div class="resa-boss">${r.item.boss}</div>
+        </div>
+        <button class="resa-remove" onclick="removeReservation(${r.itemId});syncMobileResaSummary()">✕</button>
+      </div>`;
+    } else {
+      html += `<div class="resa-slot"><span class="resa-num">${i+1}</span><div class="resa-info"><div class="resa-empty">— aucune —</div></div></div>`;
+    }
+  }
+  el.innerHTML = html;
+}
+window.syncMobileResaSummary = syncMobileResaSummary;
+
+function syncMobileFilterSlots() {
+  const slots = [...new Set(LOOT_DATA.map(x => x.slot))].sort();
+  const sel = document.getElementById('mobile-filter-slot');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Tous les emplacements</option>' +
+    slots.map(s => `<option value="${s}" ${s===cur?'selected':''}>${s}</option>`).join('');
+}
+
+// Mobile player
+document.getElementById('mobile-btn-confirm')?.addEventListener('click', () => {
+  const val = document.getElementById('mobile-player-input').value.trim();
+  if (!val) { toast('Entre un pseudo valide.', 'err'); return; }
+  state.currentPlayer = val;
+  localStorage.setItem(PLAYER_KEY, val);
+  // Sync desktop input too
+  document.getElementById('player-name-input').value = val;
+  renderMobilePlayerState();
+  render();
+  toast(`Bienvenue, ${val} !`, 'ok');
+});
+document.getElementById('mobile-player-input')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('mobile-btn-confirm').click();
+});
+document.getElementById('mobile-btn-change')?.addEventListener('click', () => {
+  state.currentPlayer = '';
+  localStorage.removeItem(PLAYER_KEY);
+  document.getElementById('mobile-player-input').value = '';
+  renderMobilePlayerState();
+  render();
+});
+
+function renderMobilePlayerState() {
+  const hasPlayer = !!state.currentPlayer;
+  document.getElementById('mobile-login-block').classList.toggle('hidden', hasPlayer);
+  document.getElementById('mobile-player-display').classList.toggle('hidden', !hasPlayer);
+  if (hasPlayer) document.getElementById('mobile-player-name').textContent = state.currentPlayer;
+  // RL panel
+  const rlPanel = document.getElementById('mobile-rl-panel');
+  if (rlPanel) rlPanel.classList.toggle('hidden', !state.isRL);
+  const rlBtn = document.getElementById('mobile-rl-toggle');
+  if (rlBtn) rlBtn.textContent = state.isRL ? 'Désactiver le mode RL' : 'Activer le mode RL';
+}
+
+// Mobile RL toggle
+document.getElementById('mobile-rl-toggle')?.addEventListener('click', () => {
+  if (!state.isRL) {
+    const pw = prompt('Mot de passe Raid Leader :');
+    if (pw !== 'hadronRL2025') { toast('Mot de passe incorrect.', 'err'); return; }
+    state.isRL = true;
+    localStorage.setItem(RL_KEY, '1');
+  } else {
+    state.isRL = false;
+    localStorage.removeItem(RL_KEY);
+  }
+  renderMobilePlayerState();
+  render();
+});
+
+// Mobile RL actions — delegate to desktop handlers
+document.getElementById('mobile-btn-lock')?.addEventListener('click', () => document.getElementById('btn-lock').click());
+document.getElementById('mobile-btn-export')?.addEventListener('click', () => { closeDrawer(); document.getElementById('btn-export').click(); });
+document.getElementById('mobile-btn-clear')?.addEventListener('click', () => document.getElementById('btn-clear-all').click());
+
+// Mobile filters — sync to main state
+['mobile-search','mobile-filter-raid','mobile-filter-type','mobile-filter-slot'].forEach(id => {
+  document.getElementById(id)?.addEventListener('input', syncMobileFilters);
+  document.getElementById(id)?.addEventListener('change', syncMobileFilters);
+});
+document.getElementById('mobile-filter-mine')?.addEventListener('change', syncMobileFilters);
+
+function syncMobileFilters() {
+  state.filters.search  = document.getElementById('mobile-search')?.value || '';
+  state.filters.raid    = document.getElementById('mobile-filter-raid')?.value || '';
+  state.filters.type    = document.getElementById('mobile-filter-type')?.value || '';
+  state.filters.slot    = document.getElementById('mobile-filter-slot')?.value || '';
+  state.filters.mine    = document.getElementById('mobile-filter-mine')?.checked || false;
+  // Sync desktop filters too
+  document.getElementById('search-input').value = state.filters.search;
+  document.getElementById('filter-raid').value  = state.filters.raid;
+  document.getElementById('filter-type').value  = state.filters.type;
+  renderItems();
+}
+
+// Refresh Wowhead tooltips after render (they need to re-scan DOM)
+const _origRenderItems = renderItems;
+function renderItems() {
+  _origRenderItems();
+  if (typeof WH !== 'undefined' && WH.Tooltips) {
+    try { WH.Tooltips.startManager(); } catch(e) {}
+  }
+}
 
 // ─── CSV Export ───
 function buildCSV(source) {
@@ -1318,11 +1752,14 @@ document.getElementById('filter-mine').addEventListener('change', e => { state.f
     setTimeout(() => overlay.style.display = 'none', 2000);
   }
   renderSlotFilter();
+  syncMobileFilterSlots();
   startPolling();
   // Auto-restore player
   if (state.currentPlayer) {
     document.getElementById('player-name-input').value = state.currentPlayer;
+    document.getElementById('mobile-player-input').value = state.currentPlayer;
   }
+  renderMobilePlayerState();
 })();
 </script>
 </body>
