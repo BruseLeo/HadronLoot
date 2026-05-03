@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HadronLoot — Convertisseur CSV Saison</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #c9a227;
+    --gold-light: #e8c96a;
+    --gold-dim: #7a5f10;
+    --void: #0a0812;
+    --void-2: #110e1f;
+    --void-3: #1a1530;
+    --void-4: #241e42;
+    --void-5: #2e2756;
+    --surface: #16122a;
+    --surface-2: #1e1936;
+    --border: rgba(201,162,39,0.18);
+    --border-hover: rgba(201,162,39,0.45);
+    --text: #ede8d8;
+    --text-dim: #a09888;
+    --text-muted: #6a6460;
+    --red: #c94040;
+    --red-light: #e87070;
+    --green: #3db37c;
+    --green-light: #6fd4a0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--void);
+    color: var(--text);
+    font-family: 'Crimson Pro', Georgia, serif;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse 80% 40% at 50% 0%, rgba(90,40,180,0.12) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 30% at 80% 100%, rgba(201,162,39,0.06) 0%, transparent 60%);
+  }
+
+  /* ─── HEADER ─── */
+  .site-header {
+    border-bottom: 0.5px solid var(--border);
+    padding: 1.25rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(10,8,18,0.85);
+    backdrop-filter: blur(8px);
+  }
+  .logo {
+    font-family: 'Cinzel', serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .logo span { color: var(--text-dim); font-weight: 400; font-size: 0.8rem; display: block; letter-spacing: 0.04em; margin-top: 2px; }
+  .header-badge {
+    font-family: 'Cinzel', serif;
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 2px;
+    background: rgba(201,162,39,0.1);
+    border: 0.5px solid rgba(201,162,39,0.3);
+    color: var(--gold-light);
+  }
+
+  /* ─── MAIN LAYOUT ─── */
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2.5rem 2rem;
+  }
+
+  /* ─── STEPS ─── */
+  .steps {
+    display: flex;
+    gap: 0;
+    margin-bottom: 2.5rem;
+    border: 0.5px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .step {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--void-2);
+    border-right: 0.5px solid var(--border);
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    transition: all 0.2s;
+  }
+  .step:last-child { border-right: none; }
+  .step.active { background: var(--void-3); color: var(--text); }
+  .step.done { color: var(--green-light); }
+  .step-num {
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    border: 0.5px solid currentColor;
+    flex-shrink: 0;
+  }
+  .step.done .step-num { background: var(--green); border-color: var(--green); color: var(--void); }
+  .step.active .step-num { background: var(--gold); border-color: var(--gold); color: var(--void); }
+
+  /* ─── CARD ─── */
+  .card {
+    background: var(--void-2);
+    border: 0.5px solid var(--border);
+    border-radius: 6px;
+    padding: 1.75rem;
+    margin-bottom: 1.5rem;
+  }
+  .card-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title::before {
+    content: '';
+    display: inline-block;
+    width: 6px; height: 6px;
+    background: var(--gold);
+    border-radius: 50%;
+  }
+
+  /* ─── DROP ZONE ─── */
+  .drop-zone {
+    border: 1.5px dashed rgba(201,162,39,0.3);
+    border-radius: 4px;
+    padding: 3rem 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    background: var(--void-3);
+  }
+  .drop-zone:hover, .drop-zone.drag-over {
+    border-color: var(--gold);
+    background: rgba(201,162,39,0.05);
+  }
+  .drop-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+  .drop-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+  .drop-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    margin-bottom: 0.4rem;
+  }
+  .drop-hint { font-size: 0.8rem; color: var(--text-muted); }
+  .drop-zone.has-file {
+    border-color: rgba(61,179,124,0.5);
+    background: rgba(61,179,124,0.04);
+  }
+  .drop-zone.has-file .drop-icon::after { content: '✓'; }
+  .file-name {
+    margin-top: 0.75rem;
+    font-size: 0.82rem;
+    color: var(--green-light);
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.04em;
+  }
+
+  /* ─── COLUMN MAPPING ─── */
+  .mapping-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 600px) { .mapping-grid { grid-template-columns: 1fr; } }
+
+  .mapping-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--void-3);
+    border: 0.5px solid var(--border);
+    border-radius: 3px;
+    padding: 8px 12px;
+  }
+  .mapping-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--gold-light);
+    flex: 0 0 80px;
+  }
+  .mapping-label .required { color: var(--red-light); margin-left: 2px; }
+  .mapping-select {
+    flex: 1;
+    background: var(--void-4);
+    border: 0.5px solid var(--border);
+    border-radius: 2px;
+    color: var(--text);
+    font-family: 'Crimson Pro', serif;
+    font-size: 0.85rem;
+    padding: 5px 8px;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23c9a227'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 8px;
+    padding-right: 24px;
+  }
+  .mapping-select:focus { border-color: var(--gold-dim); }
+  .mapping-select.mapped { border-color: rgba(61,179,124,0.4); }
+  .mapping-select.unmapped { border-color: rgba(201,64,64,0.3); }
+
+  /* ─── PREVIEW TABLE ─── */
+  .preview-wrap {
+    overflow-x: auto;
+    border: 0.5px solid var(--border);
+    border-radius: 3px;
+    margin-top: 1rem;
+  }
+  .preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+  }
+  .preview-table th {
+    background: var(--void-4);
+    padding: 6px 10px;
+    text-align: left;
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    color: var(--gold-light);
+    border-bottom: 0.5px solid var(--border);
+    white-space: nowrap;
+  }
+  .preview-table td {
+    padding: 5px 10px;
+    border-bottom: 0.5px solid rgba(201,162,39,0.06);
+    color: var(--text-dim);
+    white-space: nowrap;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .preview-table tr:last-child td { border-bottom: none; }
+  .preview-table tr:hover td { background: var(--void-3); }
+
+  /* ─── OUTPUT ─── */
+  .output-area {
+    width: 100%;
+    height: 300px;
+    background: var(--void-3);
+    border: 0.5px solid var(--border);
+    border-radius: 3px;
+    color: var(--green-light);
+    font-family: 'Courier New', monospace;
+    font-size: 0.75rem;
+    padding: 12px;
+    resize: vertical;
+    outline: none;
+    line-height: 1.5;
+  }
+
+  /* ─── STATS ─── */
+  .stats-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+  .stat-chip {
+    font-size: 0.78rem;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: var(--void-3);
+    border: 0.5px solid var(--border);
+    color: var(--text-dim);
+  }
+  .stat-chip strong { color: var(--gold-light); font-weight: 600; }
+
+  /* ─── BUTTONS ─── */
+  .btn {
+    font-family: 'Cinzel', serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 10px 22px;
+    border-radius: 3px;
+    border: 0.5px solid var(--border);
+    cursor: pointer;
+    transition: all 0.18s;
+    background: transparent;
+    color: var(--text-dim);
+  }
+  .btn:hover { border-color: var(--border-hover); color: var(--text); background: rgba(201,162,39,0.06); }
+  .btn.btn-gold { background: var(--gold); color: var(--void); border-color: var(--gold); font-weight: 700; }
+  .btn.btn-gold:hover { background: var(--gold-light); }
+  .btn.btn-gold:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn.btn-green { border-color: rgba(61,179,124,0.4); color: var(--green-light); }
+  .btn.btn-green:hover { background: rgba(61,179,124,0.1); }
+  .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 1rem; }
+
+  /* ─── INSTRUCTIONS ─── */
+  .instructions {
+    background: var(--void-3);
+    border: 0.5px solid rgba(201,162,39,0.2);
+    border-radius: 4px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  .instructions ol {
+    padding-left: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .instructions li { font-size: 0.9rem; color: var(--text-dim); line-height: 1.5; }
+  .instructions li strong { color: var(--text); }
+  .instructions code {
+    background: var(--void-4);
+    padding: 1px 6px;
+    border-radius: 2px;
+    font-size: 0.78rem;
+    color: var(--gold-light);
+    font-family: 'Courier New', monospace;
+  }
+
+  /* ─── ALERT ─── */
+  .alert {
+    padding: 10px 14px;
+    border-radius: 3px;
+    font-size: 0.85rem;
+    margin-top: 0.75rem;
+    display: none;
+  }
+  .alert.visible { display: block; }
+  .alert-warn { background: rgba(201,162,39,0.08); border: 0.5px solid rgba(201,162,39,0.3); color: var(--gold-light); }
+  .alert-err  { background: rgba(201,64,64,0.08); border: 0.5px solid rgba(201,64,64,0.3); color: var(--red-light); }
+  .alert-ok   { background: rgba(61,179,124,0.08); border: 0.5px solid rgba(61,179,124,0.3); color: var(--green-light); }
+
+  /* ─── HIDDEN ─── */
+  .hidden { display: none !important; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--void-5); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="logo">
+    HadronLoot RL
+    <span>Outil de conversion CSV → LOOT_DATA</span>
+  </div>
+  <div class="header-badge">Outil interne</div>
+</header>
+
+<div class="container">
+
+  <!-- Steps -->
+  <div class="steps" id="steps">
+    <div class="step active" id="step-1"><span class="step-num">1</span>Importer le CSV</div>
+    <div class="step" id="step-2"><span class="step-num">2</span>Mapper les colonnes</div>
+    <div class="step" id="step-3"><span class="step-num">3</span>Vérifier & convertir</div>
+    <div class="step" id="step-4"><span class="step-num">4</span>Copier dans GitHub</div>
+  </div>
+
+  <!-- Instructions -->
+  <div class="instructions">
+    <ol>
+      <li><strong>Importe</strong> le fichier CSV de la nouvelle saison (export Google Sheets ou Excel).</li>
+      <li><strong>Mappe</strong> chaque colonne attendue vers la colonne correspondante dans ton CSV.</li>
+      <li><strong>Convertis</strong> — l'outil génère le bloc <code>const LOOT_DATA = [...]</code>.</li>
+      <li>Dans <strong>GitHub</strong>, ouvre <code>index.html</code>, remplace l'ancien bloc <code>LOOT_DATA</code> par le nouveau, et commite.</li>
+    </ol>
+  </div>
+
+  <!-- STEP 1: Import -->
+  <div class="card" id="card-import">
+    <div class="card-title">Étape 1 — Importer le fichier CSV</div>
+    <div class="drop-zone" id="drop-zone">
+      <input type="file" id="file-input" accept=".csv,.txt" />
+      <div class="drop-icon">📂</div>
+      <div class="drop-label">Glisse ton fichier CSV ici</div>
+      <div class="drop-hint">ou clique pour choisir un fichier · .csv uniquement</div>
+      <div class="file-name hidden" id="file-name"></div>
+    </div>
+    <div class="alert alert-err" id="alert-import"></div>
+  </div>
+
+  <!-- STEP 2: Column mapping -->
+  <div class="card hidden" id="card-mapping">
+    <div class="card-title">Étape 2 — Correspondance des colonnes</div>
+    <p style="font-size:0.85rem;color:var(--text-dim);margin-bottom:1.25rem;">
+      Associe chaque champ attendu par HadronLoot à la colonne correspondante dans ton CSV.
+      Les champs marqués <span style="color:var(--red-light);">*</span> sont obligatoires.
+    </p>
+    <div class="mapping-grid" id="mapping-grid">
+      <!-- Généré dynamiquement -->
+    </div>
+    <div class="alert alert-warn hidden" id="alert-mapping"></div>
+
+    <!-- Aperçu des données -->
+    <div style="margin-top:1.5rem;">
+      <div style="font-family:'Cinzel',serif;font-size:0.65rem;letter-spacing:0.1em;color:var(--text-muted);text-transform:uppercase;margin-bottom:0.5rem;">
+        Aperçu des 5 premières lignes
+      </div>
+      <div class="preview-wrap">
+        <table class="preview-table" id="preview-table"></table>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-gold" id="btn-convert" disabled>Convertir →</button>
+      <button class="btn" id="btn-reset">↺ Recommencer</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: Output -->
+  <div class="card hidden" id="card-output">
+    <div class="card-title">Étape 3 — Résultat de la conversion</div>
+    <div class="stats-row" id="stats-row"></div>
+    <div class="alert alert-warn hidden" id="alert-output"></div>
+    <textarea class="output-area" id="output-area" readonly spellcheck="false"></textarea>
+    <div class="btn-row">
+      <button class="btn btn-gold" id="btn-copy">📋 Copier dans le presse-papier</button>
+      <button class="btn btn-green" id="btn-download">⬇ Télécharger en .js</button>
+      <button class="btn" id="btn-reset-2">↺ Nouveau fichier</button>
+    </div>
+  </div>
+
+  <!-- STEP 4: Instructions GitHub -->
+  <div class="card hidden" id="card-github">
+    <div class="card-title">Étape 4 — Mettre à jour GitHub</div>
+    <ol style="padding-left:1.2rem;display:flex;flex-direction:column;gap:10px;">
+      <li style="font-size:0.9rem;color:var(--text-dim);line-height:1.6;">
+        Va sur ton dépôt GitHub → ouvre le fichier <code style="background:var(--void-4);padding:1px 6px;border-radius:2px;font-size:0.78rem;color:var(--gold-light);font-family:'Courier New',monospace;">index.html</code> → clique sur le crayon ✏️ pour éditer.
+      </li>
+      <li style="font-size:0.9rem;color:var(--text-dim);line-height:1.6;">
+        Utilise <strong style="color:var(--text);">Ctrl+H</strong> (Find & Replace) dans l'éditeur GitHub. Cherche <code style="background:var(--void-4);padding:1px 6px;border-radius:2px;font-size:0.78rem;color:var(--gold-light);font-family:'Courier New',monospace;">const LOOT_DATA = [</code> pour localiser le début du bloc.
+      </li>
+      <li style="font-size:0.9rem;color:var(--text-dim);line-height:1.6;">
+        Sélectionne tout le bloc <code style="background:var(--void-4);padding:1px 6px;border-radius:2px;font-size:0.78rem;color:var(--gold-light);font-family:'Courier New',monospace;">const LOOT_DATA = [...];</code> (de <code style="background:var(--void-4);padding:1px 6px;border-radius:2px;font-size:0.78rem;color:var(--gold-light);font-family:'Courier New',monospace;">const LOOT_DATA</code> jusqu'au <code style="background:var(--void-4);padding:1px 6px;border-radius:2px;font-size:0.78rem;color:var(--gold-light);font-family:'Courier New',monospace;">];</code> inclus) et remplace-le par le bloc copié.
+      </li>
+      <li style="font-size:0.9rem;color:var(--text-dim);line-height:1.6;">
+        Mets à jour le titre en haut du fichier : <code style="background:var(--void-4);padding:1px 6px;border-radius:2px;font-size:0.78rem;color:var(--gold-light);font-family:'Courier New',monospace;">Midnight — Saison 2</code> (dans le header).
+      </li>
+      <li style="font-size:0.9rem;color:var(--text-dim);line-height:1.6;">
+        <strong style="color:var(--text);">Commit changes</strong> → GitHub Pages se met à jour en ~1 minute.
+      </li>
+      <li style="font-size:0.9rem;color:var(--text-dim);line-height:1.6;">
+        N'oublie pas de cliquer <strong style="color:var(--gold-light);">🔄 Nouvelle saison</strong> dans le panneau RL pour vider les réservations de la saison précédente !
+      </li>
+    </ol>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// FIELDS DEFINITION
+// Required fields for LOOT_DATA, with aliases for auto-detection
+// ═══════════════════════════════════════════════════════════════
+const FIELDS = [
+  {
+    key: 'raid',
+    label: 'Raid',
+    required: true,
+    aliases: ['raid', 'instance', 'zone'],
+    description: 'Nom du raid (ex: FLECHE DU VIDE)',
+  },
+  {
+    key: 'boss',
+    label: 'Boss',
+    required: true,
+    aliases: ['boss', 'encounter', 'mob'],
+    description: 'Nom du boss',
+  },
+  {
+    key: 'order',
+    label: 'Ordre Boss',
+    required: true,
+    aliases: ['ordre boss', 'ordre', 'order', 'priority'],
+    description: 'Numéro d\'ordre du boss dans le raid',
+  },
+  {
+    key: 'name',
+    label: 'Nom de l\'objet',
+    required: true,
+    aliases: ['objet', 'item', 'name', 'nom'],
+    description: 'Nom de l\'objet',
+  },
+  {
+    key: 'slot',
+    label: 'Emplacement',
+    required: true,
+    aliases: ['item slot', 'slot', 'emplacement', 'type slot'],
+    description: 'Emplacement de l\'objet (ex: Tête, Torse)',
+  },
+  {
+    key: 'type',
+    label: 'Type d\'armure',
+    required: true,
+    aliases: ['type', 'armure', 'armor', 'categorie'],
+    description: 'Type (Tissu, Cuir, Maille, Plaque, Arme, Bijou…)',
+  },
+  {
+    key: 'stat1',
+    label: 'Stat 1',
+    required: false,
+    aliases: ['stat 1', 'stat1', 'stat principale', 'primary stat'],
+    description: 'Première statistique secondaire',
+  },
+  {
+    key: 'stat2',
+    label: 'Stat 2',
+    required: false,
+    aliases: ['stat 2', 'stat2', 'stat secondaire', 'secondary stat'],
+    description: 'Deuxième statistique secondaire',
+  },
+  {
+    key: 'link',
+    label: 'Lien Wowhead',
+    required: true,
+    aliases: ['lien', 'link', 'url', 'wowhead', 'lien script wowhead', 'lien wowhead'],
+    description: 'URL complète wowhead.com/fr/item=...',
+  },
+];
+
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+let csvHeaders = [];
+let csvRows = [];
+let columnMap = {}; // fieldKey → csvColumnIndex
+
+// ═══════════════════════════════════════════════════════════════
+// CSV PARSING
+// ═══════════════════════════════════════════════════════════════
+function parseCSV(text) {
+  // Normalize line endings
+  text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const lines = text.split('\n').filter(l => l.trim() !== '');
+  if (lines.length < 2) return null;
+
+  const headers = parseCSVLine(lines[0]);
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const fields = parseCSVLine(lines[i]);
+    if (fields.length > 0 && fields.some(f => f.trim() !== '')) {
+      rows.push(fields);
+    }
+  }
+  return { headers, rows };
+}
+
+function parseCSVLine(line) {
+  const fields = [];
+  let i = 0;
+  while (i < line.length) {
+    if (line[i] === '"') {
+      let j = i + 1, field = '';
+      while (j < line.length) {
+        if (line[j] === '"' && line[j+1] === '"') { field += '"'; j += 2; }
+        else if (line[j] === '"') { j++; break; }
+        else { field += line[j++]; }
+      }
+      fields.push(field.trim());
+      if (line[j] === ',') j++;
+      i = j;
+    } else {
+      const end = line.indexOf(',', i);
+      if (end === -1) { fields.push(line.slice(i).trim()); break; }
+      fields.push(line.slice(i, end).trim());
+      i = end + 1;
+    }
+  }
+  return fields;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AUTO-DETECT COLUMN MAPPING
+// ═══════════════════════════════════════════════════════════════
+function autoDetectMapping(headers) {
+  const map = {};
+  const normalizedHeaders = headers.map(h => h.toLowerCase().trim());
+
+  for (const field of FIELDS) {
+    let bestIdx = -1;
+    // Try exact alias match first
+    for (const alias of field.aliases) {
+      const idx = normalizedHeaders.indexOf(alias.toLowerCase());
+      if (idx !== -1) { bestIdx = idx; break; }
+    }
+    // Try partial match
+    if (bestIdx === -1) {
+      for (const alias of field.aliases) {
+        const idx = normalizedHeaders.findIndex(h => h.includes(alias.toLowerCase()));
+        if (idx !== -1) { bestIdx = idx; break; }
+      }
+    }
+    map[field.key] = bestIdx;
+  }
+  return map;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EXTRACT ITEM ID FROM WOWHEAD URL
+// ═══════════════════════════════════════════════════════════════
+function extractItemID(text) {
+  if (!text) return null;
+  // URL: /item=12345 or item=12345
+  let m = text.match(/\/item=(\d+)/);
+  if (m) return parseInt(m[1]);
+  m = text.match(/item=(\d+)/);
+  if (m) return parseInt(m[1]);
+  // Plain number
+  m = text.match(/^\d+$/);
+  if (m) return parseInt(text);
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CONVERT TO LOOT_DATA
+// ═══════════════════════════════════════════════════════════════
+function convertToLootData() {
+  const items = [];
+  const warnings = [];
+  const skipped = [];
+
+  for (let i = 0; i < csvRows.length; i++) {
+    const row = csvRows[i];
+    const get = (key) => {
+      const idx = columnMap[key];
+      return (idx !== -1 && idx !== undefined && row[idx] !== undefined)
+        ? row[idx].trim() : '';
+    };
+
+    const raid  = get('raid');
+    const boss  = get('boss');
+    const order = parseInt(get('order')) || 1;
+    const name  = get('name');
+    const slot  = get('slot');
+    const type  = get('type');
+    const stat1 = get('stat1');
+    const stat2 = get('stat2');
+    const link  = get('link');
+
+    // Skip empty rows
+    if (!name && !boss && !link) continue;
+
+    // Validate required
+    const missing = [];
+    if (!raid)  missing.push('Raid');
+    if (!boss)  missing.push('Boss');
+    if (!name)  missing.push('Nom');
+    if (!slot)  missing.push('Emplacement');
+    if (!type)  missing.push('Type');
+    if (!link)  missing.push('Lien');
+
+    if (missing.length > 0) {
+      skipped.push({ row: i + 2, name: name || '(vide)', missing });
+      continue;
+    }
+
+    const id = extractItemID(link);
+    if (!id) {
+      warnings.push(`Ligne ${i + 2} — "${name}" : impossible d'extraire l'ID depuis "${link}"`);
+      continue;
+    }
+
+    items.push({ raid, boss, order, name, slot, type, stat1, stat2, link, id });
+  }
+
+  return { items, warnings, skipped };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GENERATE JS CODE
+// ═══════════════════════════════════════════════════════════════
+function generateJS(items) {
+  const esc = s => (s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  const lines = items.map(item => {
+    return `  {raid:"${esc(item.raid)}",boss:"${esc(item.boss)}",order:${item.order},name:"${esc(item.name)}",slot:"${esc(item.slot)}",type:"${esc(item.type)}",stat1:"${esc(item.stat1)}",stat2:"${esc(item.stat2)}",link:"${esc(item.link)}",id:${item.id}}`;
+  });
+  return `const LOOT_DATA = [\n${lines.join(',\n')},\n];`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════════════════════
+function setStep(n) {
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById(`step-${i}`);
+    el.classList.remove('active', 'done');
+    if (i < n) el.classList.add('done');
+    if (i === n) el.classList.add('active');
+  }
+}
+
+function buildMappingUI() {
+  const grid = document.getElementById('mapping-grid');
+  grid.innerHTML = '';
+
+  const headerOptions = csvHeaders.map((h, i) =>
+    `<option value="${i}">${h}</option>`
+  ).join('');
+
+  for (const field of FIELDS) {
+    const row = document.createElement('div');
+    row.className = 'mapping-row';
+
+    const detectedIdx = columnMap[field.key];
+    const selClass = detectedIdx !== -1 ? 'mapped' : (field.required ? 'unmapped' : '');
+
+    row.innerHTML = `
+      <span class="mapping-label">${field.label}${field.required ? '<span class="required">*</span>' : ''}</span>
+      <select class="mapping-select ${selClass}" data-field="${field.key}" id="map-${field.key}">
+        <option value="-1">— ignorer —</option>
+        ${headerOptions}
+      </select>`;
+    grid.appendChild(row);
+
+    const sel = row.querySelector('select');
+    sel.value = detectedIdx !== undefined ? detectedIdx : -1;
+    sel.addEventListener('change', onMappingChange);
+  }
+}
+
+function onMappingChange(e) {
+  const field = e.target.dataset.field;
+  const idx = parseInt(e.target.value);
+  columnMap[field] = idx;
+  e.target.className = 'mapping-select ' + (
+    idx !== -1 ? 'mapped' :
+    FIELDS.find(f => f.key === field)?.required ? 'unmapped' : ''
+  );
+  validateMapping();
+  updatePreview();
+}
+
+function validateMapping() {
+  const missing = FIELDS.filter(f => f.required && (columnMap[f.key] === -1 || columnMap[f.key] === undefined));
+  const btn = document.getElementById('btn-convert');
+  const alert = document.getElementById('alert-mapping');
+
+  if (missing.length > 0) {
+    btn.disabled = true;
+    alert.className = 'alert alert-warn visible';
+    alert.textContent = `Champs obligatoires non mappés : ${missing.map(f => f.label).join(', ')}`;
+  } else {
+    btn.disabled = false;
+    alert.className = 'alert hidden';
+  }
+}
+
+function updatePreview() {
+  const table = document.getElementById('preview-table');
+  const previewRows = csvRows.slice(0, 5);
+  const cols = FIELDS.filter(f => columnMap[f.key] !== -1 && columnMap[f.key] !== undefined);
+
+  let html = '<thead><tr>';
+  for (const f of cols) {
+    html += `<th>${f.label}</th>`;
+  }
+  html += '</tr></thead><tbody>';
+
+  for (const row of previewRows) {
+    html += '<tr>';
+    for (const f of cols) {
+      const val = row[columnMap[f.key]] || '';
+      html += `<td title="${val}">${val}</td>`;
+    }
+    html += '</tr>';
+  }
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+
+function reset() {
+  csvHeaders = [];
+  csvRows = [];
+  columnMap = {};
+  document.getElementById('file-input').value = '';
+  document.getElementById('file-name').classList.add('hidden');
+  document.getElementById('drop-zone').classList.remove('has-file');
+  document.getElementById('card-mapping').classList.add('hidden');
+  document.getElementById('card-output').classList.add('hidden');
+  document.getElementById('card-github').classList.add('hidden');
+  document.getElementById('alert-import').className = 'alert hidden';
+  setStep(1);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FILE HANDLING
+// ═══════════════════════════════════════════════════════════════
+function handleFile(file) {
+  if (!file) return;
+  if (!file.name.match(/\.(csv|txt)$/i)) {
+    showAlert('alert-import', 'err', 'Format non supporté. Merci de fournir un fichier .csv');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const text = e.target.result;
+    const result = parseCSV(text);
+    if (!result || result.headers.length === 0) {
+      showAlert('alert-import', 'err', 'Impossible de lire le fichier. Vérifiez que c\'est bien un CSV valide.');
+      return;
+    }
+
+    csvHeaders = result.headers;
+    csvRows = result.rows;
+    columnMap = autoDetectMapping(csvHeaders);
+
+    // UI
+    document.getElementById('drop-zone').classList.add('has-file');
+    const fn = document.getElementById('file-name');
+    fn.textContent = `✓ ${file.name} — ${csvRows.length} lignes détectées`;
+    fn.classList.remove('hidden');
+    document.getElementById('alert-import').className = 'alert hidden';
+
+    // Show mapping step
+    document.getElementById('card-mapping').classList.remove('hidden');
+    buildMappingUI();
+    validateMapping();
+    updatePreview();
+    setStep(2);
+
+    // Scroll to mapping
+    document.getElementById('card-mapping').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function showAlert(id, type, msg) {
+  const el = document.getElementById(id);
+  el.className = `alert alert-${type} visible`;
+  el.textContent = msg;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EVENTS
+// ═══════════════════════════════════════════════════════════════
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+
+fileInput.addEventListener('change', () => handleFile(fileInput.files[0]));
+
+dropZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropZone.classList.add('drag-over');
+});
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  handleFile(e.dataTransfer.files[0]);
+});
+
+document.getElementById('btn-convert').addEventListener('click', () => {
+  const { items, warnings, skipped } = convertToLootData();
+
+  if (items.length === 0) {
+    showAlert('alert-output', 'err', 'Aucun objet valide trouvé. Vérifiez le mapping des colonnes.');
+    document.getElementById('card-output').classList.remove('hidden');
+    return;
+  }
+
+  const js = generateJS(items);
+  document.getElementById('output-area').value = js;
+
+  // Stats
+  const statsRow = document.getElementById('stats-row');
+  statsRow.innerHTML = `
+    <span class="stat-chip"><strong>${items.length}</strong> objets convertis</span>
+    <span class="stat-chip"><strong>${[...new Set(items.map(i => i.boss))].length}</strong> boss</span>
+    <span class="stat-chip"><strong>${[...new Set(items.map(i => i.raid))].length}</strong> raids</span>
+    ${skipped.length > 0 ? `<span class="stat-chip" style="border-color:rgba(201,64,64,0.3);color:var(--red-light);"><strong>${skipped.length}</strong> lignes ignorées</span>` : ''}
+    ${warnings.length > 0 ? `<span class="stat-chip" style="border-color:rgba(201,162,39,0.4);color:var(--gold-light);"><strong>${warnings.length}</strong> avertissements</span>` : ''}
+  `;
+
+  // Warnings
+  const alertOut = document.getElementById('alert-output');
+  if (warnings.length > 0 || skipped.length > 0) {
+    let msg = '';
+    if (skipped.length > 0) {
+      msg += `Lignes ignorées (champs manquants) :\n` +
+        skipped.slice(0, 5).map(s => `  • Ligne ${s.row} "${s.name}" — manque : ${s.missing.join(', ')}`).join('\n');
+      if (skipped.length > 5) msg += `\n  • … et ${skipped.length - 5} autre(s)`;
+    }
+    if (warnings.length > 0) {
+      if (msg) msg += '\n\n';
+      msg += `Avertissements :\n` + warnings.slice(0, 5).map(w => `  • ${w}`).join('\n');
+    }
+    alertOut.className = 'alert alert-warn visible';
+    alertOut.style.whiteSpace = 'pre-line';
+    alertOut.textContent = msg;
+  } else {
+    alertOut.className = 'alert hidden';
+  }
+
+  document.getElementById('card-output').classList.remove('hidden');
+  document.getElementById('card-github').classList.remove('hidden');
+  setStep(3);
+  document.getElementById('card-output').scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
+document.getElementById('btn-copy').addEventListener('click', () => {
+  const text = document.getElementById('output-area').value;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('btn-copy');
+    btn.textContent = '✓ Copié !';
+    btn.style.background = 'rgba(61,179,124,0.2)';
+    btn.style.borderColor = 'rgba(61,179,124,0.5)';
+    btn.style.color = 'var(--green-light)';
+    setStep(4);
+    setTimeout(() => {
+      btn.textContent = '📋 Copier dans le presse-papier';
+      btn.style = '';
+    }, 2500);
+  });
+});
+
+document.getElementById('btn-download').addEventListener('click', () => {
+  const text = document.getElementById('output-area').value;
+  const blob = new Blob([text], { type: 'text/javascript' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'loot_data_saison.js';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+document.getElementById('btn-reset').addEventListener('click', reset);
+document.getElementById('btn-reset-2').addEventListener('click', reset);
+</script>
+</body>
+</html>
