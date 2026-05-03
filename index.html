@@ -996,6 +996,7 @@
         <button class="btn btn-gold" id="btn-lock">🔒 Verrouiller les réservations</button>
         <button class="btn" id="btn-export">📋 Exporter CSV pour addon</button>
         <button class="btn btn-red" id="btn-clear-all">🗑 Vider toutes les résa</button>
+        <button class="btn btn-red" id="btn-new-season" style="border-color:rgba(201,64,64,0.7);font-weight:700;">🔄 Nouvelle saison</button>
       </div>
     </div>
 
@@ -1056,6 +1057,7 @@
           <button class="btn btn-gold" id="mobile-btn-lock" style="width:100%;">🔒 Verrouiller</button>
           <button class="btn" id="mobile-btn-export" style="width:100%;">📋 Exporter CSV</button>
           <button class="btn btn-red" id="mobile-btn-clear" style="width:100%;">🗑 Vider toutes les résa</button>
+          <button class="btn btn-red" id="mobile-btn-new-season" style="width:100%;border-color:rgba(201,64,64,0.7);font-weight:700;">🔄 Nouvelle saison</button>
         </div>
       </div>
       <div style="margin-top:1rem;font-size:0.72rem;color:var(--text-muted);">Sync auto toutes les 20s. Données partagées.</div>
@@ -2056,6 +2058,37 @@ document.getElementById('btn-clear-all').addEventListener('click', async () => {
     toast('Toutes les réservations ont été supprimées.', 'ok');
   } catch(e) { toast('Erreur : ' + e.message, 'err'); }
 });
+
+// ─── NOUVELLE SAISON ───
+document.getElementById('btn-new-season').addEventListener('click', async () => {
+  const step1 = confirm(
+    '⚠️ NOUVELLE SAISON\n\n' +
+    'Cette action va supprimer TOUTES les réservations et TOUS les verrous de la saison actuelle.\n\n' +
+    'Les données seront perdues définitivement.\n\nContinuer ?'
+  );
+  if (!step1) return;
+  const step2 = confirm(
+    '⚠️ Dernière confirmation\n\n' +
+    'Confirmes-tu la réinitialisation complète pour la nouvelle saison ?\n\n' +
+    '(Cette action est irréversible)'
+  );
+  if (!step2) return;
+  try {
+    setSyncStatus('spin', 'Réinitialisation…');
+    await sb.delete('reservations?item_id=gte.0');
+    await sb.delete('locks?id=gte.0');
+    state.reservations = {};
+    state.lock = null;
+    render();
+    setSyncStatus('ok', 'Nouvelle saison prête');
+    toast('✅ Saison réinitialisée ! Pense à mettre à jour les loots dans le code.', 'ok');
+  } catch(e) {
+    setSyncStatus('err', 'Erreur');
+    toast('Erreur lors de la réinitialisation : ' + e.message, 'err');
+  }
+});
+document.getElementById('mobile-btn-new-season')?.addEventListener('click', () =>
+  document.getElementById('btn-new-season').click());
 
 // ═══════════════════════════════════════════════════════════════
 // INIT
