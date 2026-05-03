@@ -1343,12 +1343,13 @@ function renderItemCard(item) {
   return `<div class="${cardClass}" id="card-${item.id}" onclick="handleCardClick(event,${item.id})">
     <div class="card-action-hint">${hintText}</div>
     <div class="item-top">
-      <span class="item-slot-badge">${item.slot}</span>
+//      <span class="item-slot-badge">${item.slot}</span>
       <span class="item-name">
         <a class="item-name-link" href="${item.link}"${bonusAttr} data-wowhead="item=${item.id}" data-game="wow" target="_blank" onclick="event.stopPropagation()">${item.name}</a>
       </span>
     </div>
     <div class="item-meta">
+      <span class="item-slot-badge">${item.slot}</span>
       <span class="type-badge ${typeClass(item.type)}">${item.type}</span>
       ${stats.map(s => `<span class="stat-tag">${s}</span>`).join('')}
     </div>
