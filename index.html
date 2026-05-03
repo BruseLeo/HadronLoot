@@ -1309,6 +1309,9 @@ function renderItems() {
     html += `</div></div>`;
   }
   container.innerHTML = html;
+  if (typeof WH !== 'undefined' && WH.Tooltips) {
+    try { WH.Tooltips.startManager(); } catch(e) {}
+  }
 }
 
 function renderItemCard(item) {
@@ -1613,13 +1616,13 @@ function syncMobileFilters() {
 }
 
 // Refresh Wowhead tooltips after render (they need to re-scan DOM)
-const _origRenderItems = renderItems;
-function renderItems() {
-  _origRenderItems();
-  if (typeof WH !== 'undefined' && WH.Tooltips) {
-    try { WH.Tooltips.startManager(); } catch(e) {}
-  }
-}
+//const _origRenderItems = renderItems;
+//function renderItems() {
+//  _origRenderItems();
+//  if (typeof WH !== 'undefined' && WH.Tooltips) {
+//    try { WH.Tooltips.startManager(); } catch(e) {}
+//  }
+//}
 
 // ─── CSV Export ───
 function buildCSV(source) {
