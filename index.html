@@ -977,6 +977,10 @@
           <input type="checkbox" id="filter-mine" style="accent-color:var(--gold);" />
           Mes réservations seulement
         </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:0.82rem;color:var(--text-dim);cursor:pointer;margin-top:2px;">
+          <input type="checkbox" id="filter-with-resa" style="accent-color:var(--gold);" />
+          Loots avec réservation(s) seulement
+        </label>
         <button class="btn-advanced-filters" id="btn-advanced-filters">⚙ Filtres avancés</button>
       </div>
     </div>
@@ -1084,6 +1088,11 @@
           <input type="checkbox" id="mobile-filter-mine" style="accent-color:var(--gold);width:18px;height:18px;" />
           Mes réservations seulement
         </label>
+        <label style="display:flex;align-items:center;gap:8px;font-size:0.88rem;color:var(--text-dim);cursor:pointer;padding:4px 0;">
+          <input type="checkbox" id="mobile-filter-with-resa" style="accent-color:var(--gold);width:18px;height:18px;" />
+          Loots avec réservation(s) seulement
+        </label>
+        </label>
         <button class="btn-advanced-filters" id="mobile-btn-advanced-filters" style="margin-top:8px;">⚙ Filtres avancés</button>
         <button class="btn btn-gold" onclick="closeDrawer()" style="width:100%;margin-top:8px;">Appliquer</button>
       </div>
@@ -1148,7 +1157,7 @@
       </div>
     </div>
 
-    <div style="display:flex;gap:8px;margin-top:0.5rem;">
+    <div style="display:flex;gap:8px;margin-top:3rem;">
       <button class="btn-clear-adv-filters" id="btn-clear-adv-filters">✕ Tout effacer</button>
       <button class="btn btn-gold" id="btn-apply-filters" style="flex:1;">Appliquer</button>
     </div>
@@ -1477,6 +1486,7 @@ function getFilteredItems() {
       if (!item.name.toLowerCase().includes(q) && !item.boss.toLowerCase().includes(q) && !item.slot.toLowerCase().includes(q)) return false;
     }
     if (f.mine && !hasReserved(item.id)) return false;
+    if (f.withResa && !(state.reservations[item.id] && state.reservations[item.id].length > 0)) return false;
     return true;
   });
 }
@@ -1951,6 +1961,16 @@ document.getElementById('mobile-search')?.addEventListener('input', e => {
 document.getElementById('mobile-filter-mine')?.addEventListener('change', e => {
   state.filters.mine = e.target.checked;
   document.getElementById('filter-mine').checked = e.target.checked;
+  renderItems();
+});
+document.getElementById('filter-with-resa').addEventListener('change', e => {
+  state.filters.withResa = e.target.checked;
+  document.getElementById('mobile-filter-with-resa').checked = e.target.checked;
+  renderItems();
+});
+document.getElementById('mobile-filter-with-resa')?.addEventListener('change', e => {
+  state.filters.withResa = e.target.checked;
+  document.getElementById('filter-with-resa').checked = e.target.checked;
   renderItems();
 });
 
