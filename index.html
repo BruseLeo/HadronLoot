@@ -1157,6 +1157,22 @@
       </div>
     </div>
 
+    <div class="filter-section">
+      <div class="filter-section-label">Statistique secondaire</div>
+      <div class="filter-dropdown">
+        <button class="filter-dropdown-toggle" id="dd-stat-toggle">Toutes les stats</button>
+        <div class="filter-dropdown-menu" id="dd-stat-menu">
+          <div class="filter-dropdown-select-all" data-dd="stat">
+            <span>Tout sélectionner</span><span>Tout effacer</span>
+          </div>
+          <label class="filter-checkbox-item"><input type="checkbox" data-filter="stat" value="Hate" /> Hâte</label>
+          <label class="filter-checkbox-item"><input type="checkbox" data-filter="stat" value="Maitrise" /> Maîtrise</label>
+          <label class="filter-checkbox-item"><input type="checkbox" data-filter="stat" value="Crit" /> Critique</label>
+          <label class="filter-checkbox-item"><input type="checkbox" data-filter="stat" value="Poly" /> Polyvalence</label>
+        </div>
+      </div>
+    </div>
+
     <div style="display:flex;gap:8px;margin-top:3rem;">
       <button class="btn-clear-adv-filters" id="btn-clear-adv-filters">✕ Tout effacer</button>
       <button class="btn btn-gold" id="btn-apply-filters" style="flex:1;">Appliquer</button>
@@ -1342,7 +1358,7 @@ let state = {
   isRL: localStorage.getItem(RL_KEY) === '1',
   reservations: {},   // { itemId: [playerName, ...] }  — built from DB rows
   lock: null,         // { id, snapshot, created_at } or null
-  filters: { raid: [], type: [], slot: [], search: '', mine: false },
+  filters: { raid: [], type: [], slot: [], stat: [], search: '', mine: false },
   syncing: false,
   pollTimer: null,
 };
@@ -1486,6 +1502,7 @@ function getFilteredItems() {
       if (!item.name.toLowerCase().includes(q) && !item.boss.toLowerCase().includes(q) && !item.slot.toLowerCase().includes(q)) return false;
     }
     if (f.mine && !hasReserved(item.id)) return false;
+    if (f.stat.length && !f.stat.some(s => item.stat1 === s || item.stat2 === s)) return false;
     if (f.withResa && !(state.reservations[item.id] && state.reservations[item.id].length > 0)) return false;
     return true;
   });
@@ -1805,19 +1822,19 @@ function initSlotCheckboxes() {
 }
 
 function initDropdownToggles() {
-  ['raid','type','slot'].forEach(name => {
+  ['raid','type','slot','stat'].forEach(name => {
     const toggle = document.getElementById(`dd-${name}-toggle`);
     const menu   = document.getElementById(`dd-${name}-menu`);
     toggle.addEventListener('click', e => {
       e.stopPropagation();
-      ['raid','type','slot'].forEach(n => {
+      ['raid','type','slot','stat'].forEach(n => {
         if (n !== name) document.getElementById(`dd-${n}-menu`).classList.remove('open');
       });
       menu.classList.toggle('open');
     });
   });
   document.addEventListener('click', () => {
-    ['raid','type','slot'].forEach(n =>
+    ['raid','type','slot','stat'].forEach(n =>
       document.getElementById(`dd-${n}-menu`)?.classList.remove('open'));
   });
   document.getElementById('filter-modal')?.addEventListener('click', e => e.stopPropagation());
@@ -1839,12 +1856,12 @@ function initSelectAllRows() {
 }
 
 function readFiltersFromModal() {
-  ['raid','type','slot'].forEach(name => {
+  ['raid','type','slot','stat'].forEach(name => {
     const checked = [...document.querySelectorAll(`input[data-filter="${name}"]:checked`)]
       .map(cb => cb.value);
     state.filters[name] = checked;
     const toggle = document.getElementById(`dd-${name}-toggle`);
-    const labels = { raid: 'Tous les raids', type: 'Tous les types', slot: 'Tous les emplacements' };
+    const labels = { raid: 'Tous les raids', type: 'Tous les types', slot: 'Tous les emplacements', stat: 'Toutes les stats' };
     if (checked.length === 0) {
       toggle.textContent = labels[name];
       toggle.classList.remove('has-selection');
@@ -1858,7 +1875,7 @@ function readFiltersFromModal() {
 }
 
 function updateAdvancedFilterBtn() {
-  const total = state.filters.raid.length + state.filters.type.length + state.filters.slot.length;
+  const total = state.filters.raid.length + state.filters.type.length + state.filters.slot.length + state.filters.stat.length;
   ['btn-advanced-filters','mobile-btn-advanced-filters'].forEach(id => {
     const btn = document.getElementById(id);
     if (!btn) return;
@@ -1880,10 +1897,12 @@ function renderActiveFilterBar() {
     'FAILLE DU REVE': 'Faille du Rêve',
     "MARCHE SUR QUEL'DANAS": "Quel'Danas"
   };
+  const statLabels = { Hate: 'Hâte', Maitrise: 'Maîtrise', Crit: 'Critique', Poly: 'Polyvalence' };
   const allActive = [
     ...state.filters.raid.map(v => ({ filter: 'raid', value: v, label: raidLabels[v] || v })),
     ...state.filters.type.map(v => ({ filter: 'type', value: v, label: v })),
     ...state.filters.slot.map(v => ({ filter: 'slot', value: v, label: v })),
+    ...state.filters.stat.map(v => ({ filter: 'stat', value: v, label: statLabels[v] || v })),
   ];
   if (allActive.length === 0) { bar.innerHTML = ''; return; }
   bar.innerHTML = allActive.map(f =>
@@ -1902,10 +1921,10 @@ function removeSingleFilter(filterName, value) {
 window.removeSingleFilter = removeSingleFilter;
 
 function clearAllFilters() {
-  state.filters.raid = []; state.filters.type = []; state.filters.slot = [];
+  state.filters.raid = []; state.filters.type = []; state.filters.slot = []; state.filters.stat = [];
   document.querySelectorAll('input[data-filter]').forEach(cb => cb.checked = false);
-  ['raid','type','slot'].forEach(name => {
-    const labels = { raid: 'Tous les raids', type: 'Tous les types', slot: 'Tous les emplacements' };
+  ['raid','type','slot','stat'].forEach(name => {
+    const labels = { raid: 'Tous les raids', type: 'Tous les types', slot: 'Tous les emplacements', stat: 'Toutes les stats' };
     const toggle = document.getElementById(`dd-${name}-toggle`);
     if (toggle) { toggle.textContent = labels[name]; toggle.classList.remove('has-selection'); }
   });
