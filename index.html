@@ -1502,7 +1502,7 @@ function getFilteredItems() {
       if (!item.name.toLowerCase().includes(q) && !item.boss.toLowerCase().includes(q) && !item.slot.toLowerCase().includes(q)) return false;
     }
     if (f.mine && !hasReserved(item.id)) return false;
-    if (f.stat.length && !f.stat.some(s => item.stat1 === s || item.stat2 === s)) return false;
+    if (f.stat.length && !f.stat.every(s => item.stat1 === s || item.stat2 === s)) return false;
     if (f.withResa && !(state.reservations[item.id] && state.reservations[item.id].length > 0)) return false;
     return true;
   });
